@@ -1,0 +1,14 @@
+Folder native Android.
+
+File-file native Android (AndroidManifest.xml, build.gradle, MainActivity, dll.)
+belum disertakan dalam zip ini. Setelah mengekstrak, jalankan perintah berikut
+di dalam folder proyek untuk membuatnya:
+
+    flutter create --platforms=android --project-name=dompet_kos .
+
+Atau, jika proyek belum dibuat sama sekali:
+
+    flutter create --platforms=android --project-name=dompet_kos dompet_kos
+
+Catatan: sdk minSdkVersion flutter_local_notifications membutuhkan
+minSdkVersion 21 atau lebih tinggi.
