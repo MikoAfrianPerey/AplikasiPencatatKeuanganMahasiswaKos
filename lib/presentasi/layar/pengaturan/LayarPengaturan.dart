@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../../provider/ProviderPengaturan.dart';
 
 class LayarPengaturan extends StatefulWidget {
   const LayarPengaturan({super.key});
@@ -8,10 +11,6 @@ class LayarPengaturan extends StatefulWidget {
 }
 
 class _KeadaanLayarPengaturan extends State<LayarPengaturan> {
-  double _ambangNotifikasi = 80;
-  bool _pengingatHarian = true;
-  bool _temaGelap = false;
-
   Future<bool?> _konfirmasiReset() {
     return showDialog<bool>(
       context: context,
@@ -36,11 +35,13 @@ class _KeadaanLayarPengaturan extends State<LayarPengaturan> {
     );
   }
 
-  void _resetData() async {
+  Future<void> _resetData(ProviderPengaturan pengaturan) async {
     final konfirmasi = await _konfirmasiReset();
     if (konfirmasi == true && mounted) {
+      await pengaturan.resetDataDemo();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Semua data berhasil direset')),
+        const SnackBar(content: Text('Data demo berhasil direset')),
       );
     }
   }
@@ -48,32 +49,12 @@ class _KeadaanLayarPengaturan extends State<LayarPengaturan> {
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
+    final pengaturan = context.watch<ProviderPengaturan>();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Pengaturan')),
       body: ListView(
         children: [
-          _bagianHeader('Periode Anggaran', tema),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.calendar_month),
-                  title: const Text('Periode Aktif'),
-                  subtitle: const Text('Oktober 2026'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
-                ),
-                ListTile(
-                  leading: const Icon(Icons.attach_money),
-                  title: const Text('Total Pemasukan'),
-                  subtitle: const Text('Rp 1.500.000'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
-                ),
-              ],
-            ),
-          ),
           _bagianHeader('Batas Kategori', tema),
           Card(
             child: Column(
@@ -93,7 +74,8 @@ class _KeadaanLayarPengaturan extends State<LayarPengaturan> {
                   onTap: () {},
                 ),
                 ListTile(
-                  leading: const Icon(Icons.directions_bus, color: Colors.blue),
+                  leading:
+                      const Icon(Icons.directions_bus, color: Colors.blue),
                   title: const Text('Transport'),
                   subtitle: const Text('Batas: Rp 200.000'),
                   trailing: const Icon(Icons.chevron_right),
@@ -117,39 +99,24 @@ class _KeadaanLayarPengaturan extends State<LayarPengaturan> {
                   leading: const Icon(Icons.notifications),
                   title: const Text('Ambang Batas Peringatan'),
                   subtitle: Slider(
-                    value: _ambangNotifikasi,
+                    value: pengaturan.ambangNotifikasi,
                     min: 50,
                     max: 100,
                     divisions: 10,
-                    label: '${_ambangNotifikasi.toInt()}%',
-                    onChanged: (nilai) {
-                      setState(() => _ambangNotifikasi = nilai);
-                    },
+                    label: '${pengaturan.ambangNotifikasi.toInt()}%',
+                    onChanged: pengaturan.setAmbangNotifikasi,
                   ),
-                  trailing: Text('${_ambangNotifikasi.toInt()}%'),
+                  trailing:
+                      Text('${pengaturan.ambangNotifikasi.toInt()}%'),
                 ),
                 SwitchListTile(
                   secondary: const Icon(Icons.alarm),
                   title: const Text('Pengingat Harian'),
                   subtitle: const Text('Pengingat catat transaksi pukul 21:00'),
-                  value: _pengingatHarian,
-                  onChanged: (nilai) {
-                    setState(() => _pengingatHarian = nilai);
-                  },
+                  value: pengaturan.pengingatHarian,
+                  onChanged: pengaturan.setPengingatHarian,
                 ),
               ],
-            ),
-          ),
-          _bagianHeader('Tampilan', tema),
-          Card(
-            child: SwitchListTile(
-              secondary: const Icon(Icons.dark_mode),
-              title: const Text('Tema Gelap'),
-              subtitle: const Text('Ikuti pengaturan sistem'),
-              value: _temaGelap,
-              onChanged: (nilai) {
-                setState(() => _temaGelap = nilai);
-              },
             ),
           ),
           _bagianHeader('Kategori', tema),
@@ -164,12 +131,43 @@ class _KeadaanLayarPengaturan extends State<LayarPengaturan> {
           ),
           _bagianHeader('Data', tema),
           Card(
-            child: ListTile(
-              leading: const Icon(Icons.delete_forever, color: Colors.red),
-              title: const Text('Reset Semua Data'),
-              subtitle: const Text('Hapus seluruh data aplikasi'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: _resetData,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.delete_forever, color: Colors.red),
+                  title: const Text('Reset Semua Data'),
+                  subtitle: const Text('Hapus seluruh data aplikasi'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _resetData(pengaturan),
+                ),
+              ],
+            ),
+          ),
+          _bagianHeader('Demo & Pengujian State', tema),
+          Card(
+            child: Column(
+              children: [
+                SwitchListTile(
+                  secondary: const Icon(Icons.bug_report),
+                  title: const Text('Simulasikan Error Saat Memuat Kategori'),
+                  subtitle: const Text(
+                    'Aktifkan lalu buka layar Onboarding untuk melihat '
+                    'tampilan error state beserta tombol retry.',
+                  ),
+                  value: pengaturan.simulasiError,
+                  onChanged: pengaturan.setSimulasiError,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.restart_alt),
+                  title: const Text('Reset Data Demo'),
+                  subtitle: const Text(
+                    'Kosongkan kategori untuk melihat empty state pada '
+                    'layar Onboarding dan Tambah Transaksi.',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _resetData(pengaturan),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),

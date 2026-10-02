@@ -1,2 +1,0 @@
-// RepositoriKategori.dart
-// TODO: implementasi

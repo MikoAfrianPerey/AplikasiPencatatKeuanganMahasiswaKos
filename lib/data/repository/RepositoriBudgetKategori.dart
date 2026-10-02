@@ -1,2 +1,0 @@
-// RepositoriBudgetKategori.dart
-// TODO: implementasi

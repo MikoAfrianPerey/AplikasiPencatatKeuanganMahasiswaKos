@@ -1,2 +1,0 @@
-// RepositoriTransaksi.dart
-// TODO: implementasi

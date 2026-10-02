@@ -32,3 +32,22 @@ Kriteria berhasil
 User bisa mencatat transaksi dalam <10 detik
 Dashboard menampilkan sisa saldo akurat sesuai input
 Minimal 5 user uji coba menyatakan aplikasi membantu mereka sadar pola pengeluaran (via survei singkat)
+
+## Status Implementasi
+
+- **Pertemuan 3** — kerangka UI + routing (6 layar), widget reusable, tema terang/gelap,
+  format mata uang `id_ID`.
+- **Pertemuan 4** — state management (Provider), form, dan validasi untuk fitur
+  Onboarding (Pengaturan Periode Anggaran) dan Tambah Transaksi, termasuk 6 kondisi
+  UI (initial loading, data dimuat, empty state, error + retry, validasi input,
+  loading saat submit) beserta widget test. Detail lihat
+  [DOKUMENTASI_PERTEMUAN_4.md](./DOKUMENTASI_PERTEMUAN_4.md).
+
+## Cara Menjalankan
+
+```bash
+flutter pub get
+flutter test          # 29 test (widget + unit)
+flutter run           # di emulator/perangkat Android
+```
+
