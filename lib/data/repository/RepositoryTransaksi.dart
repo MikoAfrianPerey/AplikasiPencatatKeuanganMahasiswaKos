@@ -12,6 +12,14 @@ abstract class RepositoryTransaksi {
   });
 
   Future<void> hapus(int id);
+
+  Future<void> perbarui(int id, {
+    int? idKategori,
+    int? jumlah,
+    JenisTransaksi? jenis,
+    DateTime? tanggal,
+    String? catatan,
+  });
 }
 
 class RepositoryTransaksiMock implements RepositoryTransaksi {
@@ -56,5 +64,29 @@ class RepositoryTransaksiMock implements RepositoryTransaksi {
   Future<void> hapus(int id) async {
     await Future.delayed(jeda);
     _transaksi.removeWhere((item) => item.id == id);
+  }
+
+  @override
+  Future<void> perbarui(int id, {
+    int? idKategori,
+    int? jumlah,
+    JenisTransaksi? jenis,
+    DateTime? tanggal,
+    String? catatan,
+  }) async {
+    await Future.delayed(jeda);
+    final index = _transaksi.indexWhere((item) => item.id == id);
+    if (index == -1) return;
+    final lama = _transaksi[index];
+    _transaksi[index] = Transaksi(
+      id: lama.id,
+      idPeriodeBudget: lama.idPeriodeBudget,
+      idKategori: idKategori ?? lama.idKategori,
+      jenisTransaksi: jenis ?? lama.jenisTransaksi,
+      jumlah: jumlah ?? lama.jumlah,
+      catatan: catatan ?? lama.catatan,
+      tanggalTransaksi: tanggal ?? lama.tanggalTransaksi,
+      dibuatPada: lama.dibuatPada,
+    );
   }
 }
