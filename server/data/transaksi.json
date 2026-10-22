@@ -1,1 +1,1 @@
-[]
+[{"id_periode_budget":1,"id_kategori":1,"jenis_transaksi":"PEMASUKAN","jumlah":10000000,"catatan":"","tanggal_transaksi":"2026-10-23T02:17:09.345543","dibuat_pada":"2026-10-23T02:17:22.826232","id":2},{"id_periode_budget":1,"id_kategori":1,"jenis_transaksi":"PENGELUARAN","jumlah":60000,"catatan":"","tanggal_transaksi":"2026-10-23T02:16:51.318684","dibuat_pada":"2026-10-23T02:17:03.241946","id":1}]
