@@ -42,12 +42,26 @@ Minimal 5 user uji coba menyatakan aplikasi membantu mereka sadar pola pengeluar
   UI (initial loading, data dimuat, empty state, error + retry, validasi input,
   loading saat submit) beserta widget test. Detail lihat
   [DOKUMENTASI_PERTEMUAN_4.md](./DOKUMENTASI_PERTEMUAN_4.md).
+- **Pertemuan 5** — SQLite lokal, CRUD transaksi, dan persistence test. Detail:
+  [DOKUMENTASI_PERTEMUAN_5.md](./DOKUMENTASI_PERTEMUAN_5.md).
+- **Pertemuan 6** — vertical slice API transaksi (REST + JSON backend), UI loading/empty/error/retry,
+  dan 7 unit test API/model. Detail: [DOKUMENTASI_PERTEMUAN_6.md](./DOKUMENTASI_PERTEMUAN_6.md).
 
 ## Cara Menjalankan
 
+Jalankan backend di terminal pertama:
+
+```bash
+dart run server/api.dart
+```
+
+Di terminal kedua:
+
 ```bash
 flutter pub get
-flutter test          # 29 test (widget + unit)
-flutter run           # di emulator/perangkat Android
+flutter test          # 41 test (termasuk API, UI, persistence)
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
 ```
+
+Untuk perangkat fisik, ganti `10.0.2.2` dengan IP LAN komputer yang menjalankan server.
 

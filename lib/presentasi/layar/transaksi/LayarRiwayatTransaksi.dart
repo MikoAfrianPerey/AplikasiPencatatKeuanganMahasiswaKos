@@ -23,6 +23,7 @@ class _KeadaanLayarRiwayatTransaksi extends State<LayarRiwayatTransaksi> {
   List<Kategori> _kategori = [];
   String _filterKategori = 'Semua';
   bool _sedangMemuat = true;
+  String? _error;
 
   @override
   void initState() {
@@ -31,6 +32,12 @@ class _KeadaanLayarRiwayatTransaksi extends State<LayarRiwayatTransaksi> {
   }
 
   Future<void> _muatData() async {
+    if (mounted) {
+      setState(() {
+        _sedangMemuat = true;
+        _error = null;
+      });
+    }
     final repoTransaksi = context.read<RepositoryTransaksi>();
     final repoKategori = context.read<RepositoryKategori>();
     try {
@@ -41,10 +48,16 @@ class _KeadaanLayarRiwayatTransaksi extends State<LayarRiwayatTransaksi> {
           _semuaTransaksi = transaksi;
           _kategori = kategori;
           _sedangMemuat = false;
+          _error = null;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _sedangMemuat = false);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _sedangMemuat = false;
+          _error = error.toString();
+        });
+      }
     }
   }
 
@@ -145,7 +158,29 @@ class _KeadaanLayarRiwayatTransaksi extends State<LayarRiwayatTransaksi> {
       ),
       body: _sedangMemuat
           ? const Center(child: CircularProgressIndicator())
-          : Column(
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.wifi_off, size: 48),
+                        const SizedBox(height: 12),
+                        const Text('Gagal memuat transaksi dari server'),
+                        const SizedBox(height: 8),
+                        Text(_error!, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: _muatData,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Coba Lagi'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : Column(
               children: [
                 SizedBox(
                   height: 48,

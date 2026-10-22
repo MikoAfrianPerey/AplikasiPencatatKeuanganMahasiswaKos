@@ -22,11 +22,22 @@ class Transaksi {
   });
 
   factory Transaksi.dariMap(Map<String, dynamic> map) {
+    final jenis = map['jenis_transaksi'];
+    if (map['id'] is! int ||
+        map['id_periode_budget'] is! int ||
+        map['id_kategori'] is! int ||
+        map['jumlah'] is! int ||
+        (jenis != 'PEMASUKAN' && jenis != 'PENGELUARAN') ||
+        map['tanggal_transaksi'] is! String ||
+        map['dibuat_pada'] is! String ||
+        (map['catatan'] != null && map['catatan'] is! String)) {
+      throw const FormatException('Data transaksi tidak valid');
+    }
     return Transaksi(
       id: map['id'] as int,
       idPeriodeBudget: map['id_periode_budget'] as int,
       idKategori: map['id_kategori'] as int,
-      jenisTransaksi: map['jenis_transaksi'] == 'PEMASUKAN'
+      jenisTransaksi: jenis == 'PEMASUKAN'
           ? JenisTransaksi.pemasukan
           : JenisTransaksi.pengeluaran,
       jumlah: map['jumlah'] as int,
@@ -41,8 +52,9 @@ class Transaksi {
       'id': id,
       'id_periode_budget': idPeriodeBudget,
       'id_kategori': idKategori,
-      'jenis_transaksi':
-          jenisTransaksi == JenisTransaksi.pemasukan ? 'PEMASUKAN' : 'PENGELUARAN',
+      'jenis_transaksi': jenisTransaksi == JenisTransaksi.pemasukan
+          ? 'PEMASUKAN'
+          : 'PENGELUARAN',
       'jumlah': jumlah,
       'catatan': catatan,
       'tanggal_transaksi': tanggalTransaksi.toIso8601String(),
