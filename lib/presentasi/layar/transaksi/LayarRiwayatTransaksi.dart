@@ -5,6 +5,7 @@ import '../../../data/model/Kategori.dart';
 import '../../../data/model/Transaksi.dart';
 import '../../../data/repository/RepositoryKategori.dart';
 import '../../../data/repository/RepositoryTransaksi.dart';
+import '../../../inti/routing/RuteAplikasi.dart';
 import '../../../inti/utils/PemetaIkon.dart';
 import '../../../inti/utils/PemformatMataUang.dart';
 import '../../../inti/utils/PemformatTanggal.dart';
@@ -80,6 +81,15 @@ class _KeadaanLayarRiwayatTransaksi extends State<LayarRiwayatTransaksi> {
     return hasil;
   }
 
+  Future<void> _editTransaksi(Transaksi transaksi) async {
+    await Navigator.pushNamed(
+      context,
+      RuteAplikasi.editTransaksi,
+      arguments: transaksi,
+    );
+    if (mounted) _muatData();
+  }
+
   Future<void> _hapusTransaksi(Transaksi transaksi) async {
     final konfirmasi = await showDialog<bool>(
       context: context,
@@ -120,7 +130,19 @@ class _KeadaanLayarRiwayatTransaksi extends State<LayarRiwayatTransaksi> {
     final daftarFilter = _daftarFilter;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Riwayat Transaksi')),
+      appBar: AppBar(
+        title: const Text('Riwayat Transaksi'),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(28),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Ketuk transaksi untuk mengedit, geser ke kiri untuk menghapus',
+              style: TextStyle(fontSize: 12),
+            ),
+          ),
+        ),
+      ),
       body: _sedangMemuat
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -204,6 +226,7 @@ class _KeadaanLayarRiwayatTransaksi extends State<LayarRiwayatTransaksi> {
                                           return false;
                                         },
                                         child: ListTile(
+                                          onTap: () => _editTransaksi(item),
                                           leading: CircleAvatar(
                                             backgroundColor: kat != null
                                                 ? Color(kat.nilaiWarna)

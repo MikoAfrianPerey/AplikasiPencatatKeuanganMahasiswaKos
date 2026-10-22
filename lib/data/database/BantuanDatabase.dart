@@ -1,9 +1,6 @@
-
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 class BantuanDatabase {
   static final BantuanDatabase instance = BantuanDatabase._internal();
@@ -52,19 +49,9 @@ class BantuanDatabase {
   }
 
   Future<Database> _inisialisasiDatabase() async {
-    String jalur;
+    final jalur = await _jalurDatabase;
 
-    if (kIsWeb) {
-      // Gunakan database SQLite untuk Flutter Web.
-      databaseFactory = databaseFactoryFfiWeb;
-
-      jalur = _customPath ?? 'dompet_kos_web.db';
-    } else {
-      // Gunakan lokasi database normal untuk platform selain Web.
-      jalur = await _jalurDatabase;
-    }
-
-    return await openDatabase(
+    return openDatabase(
       jalur,
       version: 1,
       onConfigure: (db) async {
@@ -108,10 +95,8 @@ class BantuanDatabase {
         persen_batas_peringatan REAL DEFAULT 80,
         peringatan_sudah_dikirim INTEGER DEFAULT 0,
         dibuat_pada TEXT NOT NULL,
-        FOREIGN KEY (id_periode_budget)
-          REFERENCES periode_budget(id),
-        FOREIGN KEY (id_kategori)
-          REFERENCES kategori(id)
+        FOREIGN KEY (id_periode_budget) REFERENCES periode_budget(id),
+        FOREIGN KEY (id_kategori) REFERENCES kategori(id)
       )
     ''');
 
@@ -125,18 +110,13 @@ class BantuanDatabase {
         catatan TEXT DEFAULT '',
         tanggal_transaksi TEXT NOT NULL,
         dibuat_pada TEXT NOT NULL,
-        FOREIGN KEY (id_periode_budget)
-          REFERENCES periode_budget(id),
-        FOREIGN KEY (id_kategori)
-          REFERENCES kategori(id)
+        FOREIGN KEY (id_periode_budget) REFERENCES periode_budget(id),
+        FOREIGN KEY (id_kategori) REFERENCES kategori(id)
       )
     ''');
   }
 
-  Future<int> sisipkan(
-    String tabel,
-    Map<String, dynamic> data,
-  ) async {
+  Future<int> sisipkan(String tabel, Map<String, dynamic> data) async {
     final db = await database;
     final map = Map<String, dynamic>.from(data);
 
@@ -144,7 +124,7 @@ class BantuanDatabase {
       map.remove('id');
     }
 
-    return await db.insert(tabel, map);
+    return db.insert(tabel, map);
   }
 
   Future<List<Map<String, dynamic>>> kueri(
@@ -155,7 +135,7 @@ class BantuanDatabase {
   }) async {
     final db = await database;
 
-    return await db.query(
+    return db.query(
       tabel,
       where: where,
       whereArgs: whereArgs,
@@ -171,7 +151,7 @@ class BantuanDatabase {
   }) async {
     final db = await database;
 
-    return await db.update(
+    return db.update(
       tabel,
       data,
       where: where,
@@ -186,7 +166,7 @@ class BantuanDatabase {
   }) async {
     final db = await database;
 
-    return await db.delete(
+    return db.delete(
       tabel,
       where: where,
       whereArgs: whereArgs,
@@ -194,22 +174,7 @@ class BantuanDatabase {
   }
 
   Future<void> hapusDatabase() async {
-    if (_database != null) {
-      if (_database!.isOpen) {
-        await _database!.close();
-      }
-
-      _database = null;
-    }
-
-    if (kIsWeb) {
-      // Penghapusan database Web perlu penanganan khusus.
-      throw UnsupportedError(
-        'Penghapusan database melalui hapusDatabase() '
-        'belum diimplementasikan untuk Flutter Web.',
-      );
-    }
-
+    await tutup();
     final jalur = await _jalurDatabase;
     await deleteDatabase(jalur);
   }

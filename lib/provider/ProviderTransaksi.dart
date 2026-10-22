@@ -15,6 +15,7 @@ class ProviderTransaksi extends ChangeNotifier {
   StatusData<List<Kategori>> _statusKategori = const StatusData.loading();
   StatusData<Transaksi> _statusSimpan = const StatusData.initial();
   String? _errorForm;
+  int? _idTransaksiDiedit;
 
   bool _adalahPemasukan = false;
   String _jumlah = '0';
@@ -30,6 +31,8 @@ class ProviderTransaksi extends ChangeNotifier {
   Kategori? get kategoriTerpilih => _kategoriTerpilih;
   DateTime get tanggal => _tanggal;
   List<Kategori>? get kategori => _statusKategori.data;
+  int? get idTransaksiDiedit => _idTransaksiDiedit;
+  bool get modeEdit => _idTransaksiDiedit != null;
 
   Future<void> muatKategori() async {
     _statusKategori = const StatusData.loading();
@@ -40,9 +43,28 @@ class ProviderTransaksi extends ChangeNotifier {
         _statusKategori = const StatusData.kosong();
       } else {
         _statusKategori = StatusData.sukses(hasil);
-        _kategoriTerpilih ??= hasil.first;      }
+        _kategoriTerpilih ??= hasil.first;
+      }
     } on Exception catch (e) {
       _statusKategori = StatusData.error(e.toString());
+    }
+    notifyListeners();
+  }
+
+  Future<void> muatUntukEdit(Transaksi transaksi) async {
+    _idTransaksiDiedit = transaksi.id;
+    _adalahPemasukan =
+        transaksi.jenisTransaksi == JenisTransaksi.pemasukan;
+    _jumlah = transaksi.jumlah.toString();
+    _tanggal = transaksi.tanggalTransaksi;
+    controllerCatatan.text = transaksi.catatan;
+    notifyListeners();
+    await muatKategori();
+    for (final item in _statusKategori.data ?? const <Kategori>[]) {
+      if (item.id == transaksi.idKategori) {
+        _kategoriTerpilih = item;
+        break;
+      }
     }
     notifyListeners();
   }
@@ -83,6 +105,7 @@ class ProviderTransaksi extends ChangeNotifier {
   }
 
   void reset() {
+    _idTransaksiDiedit = null;
     _adalahPemasukan = false;
     _jumlah = '0';
     _kategoriTerpilih = _statusKategori.data?.isNotEmpty == true
@@ -120,15 +143,33 @@ class ProviderTransaksi extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final transaksi = await _repositoryTransaksi.buat(
-        idKategori: _kategoriTerpilih!.id,
-        jumlah: int.parse(_jumlah),
-        jenis: _adalahPemasukan
-            ? JenisTransaksi.pemasukan
-            : JenisTransaksi.pengeluaran,
-        tanggal: _tanggal,
-        catatan: controllerCatatan.text.trim(),
-      );
+      final Transaksi transaksi;
+      if (_idTransaksiDiedit != null) {
+        await _repositoryTransaksi.perbarui(
+          _idTransaksiDiedit!,
+          idKategori: _kategoriTerpilih!.id,
+          jumlah: int.parse(_jumlah),
+          jenis: _adalahPemasukan
+              ? JenisTransaksi.pemasukan
+              : JenisTransaksi.pengeluaran,
+          tanggal: _tanggal,
+          catatan: controllerCatatan.text.trim(),
+        );
+        final tersimpan =
+            await _repositoryTransaksi.ambilBerdasarkanId(_idTransaksiDiedit!);
+        transaksi = tersimpan ??
+            (throw Exception('Transaksi tidak ditemukan saat diperbarui'));
+      } else {
+        transaksi = await _repositoryTransaksi.buat(
+          idKategori: _kategoriTerpilih!.id,
+          jumlah: int.parse(_jumlah),
+          jenis: _adalahPemasukan
+              ? JenisTransaksi.pemasukan
+              : JenisTransaksi.pengeluaran,
+          tanggal: _tanggal,
+          catatan: controllerCatatan.text.trim(),
+        );
+      }
       _statusSimpan = StatusData.sukses(transaksi);
     } on Exception catch (e) {
       _statusSimpan = StatusData.error(e.toString());

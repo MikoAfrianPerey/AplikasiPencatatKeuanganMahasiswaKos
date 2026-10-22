@@ -3,6 +3,8 @@ import '../model/Transaksi.dart';
 abstract class RepositoryTransaksi {
   Future<List<Transaksi>> ambilSemua();
 
+  Future<Transaksi?> ambilBerdasarkanId(int id);
+
   Future<Transaksi> buat({
     required int idKategori,
     required int jumlah,
@@ -33,6 +35,15 @@ class RepositoryTransaksiMock implements RepositoryTransaksi {
   Future<List<Transaksi>> ambilSemua() async {
     await Future.delayed(jeda);
     return List.unmodifiable(_transaksi);
+  }
+
+  @override
+  Future<Transaksi?> ambilBerdasarkanId(int id) async {
+    await Future.delayed(jeda);
+    for (final item in _transaksi) {
+      if (item.id == id) return item;
+    }
+    return null;
   }
 
   @override

@@ -18,6 +18,17 @@ class RepositoryTransaksiSqlite implements RepositoryTransaksi {
   }
 
   @override
+  Future<Transaksi?> ambilBerdasarkanId(int id) async {
+    final hasil = await _db.kueri(
+      'transaksi',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (hasil.isEmpty) return null;
+    return Transaksi.dariMap(hasil.first);
+  }
+
+  @override
   Future<Transaksi> buat({
     required int idKategori,
     required int jumlah,

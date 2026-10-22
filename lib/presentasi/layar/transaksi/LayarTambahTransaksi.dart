@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../data/model/Kategori.dart';
+import '../../../data/model/Transaksi.dart';
 import '../../../inti/utils/PemetaIkon.dart';
 import '../../../inti/utils/PemformatMataUang.dart';
 import '../../../inti/utils/PemformatTanggal.dart';
@@ -10,7 +11,9 @@ import '../../widget/StateKosong.dart';
 import '../../widget/TombolUtama.dart';
 
 class LayarTambahTransaksi extends StatefulWidget {
-  const LayarTambahTransaksi({super.key});
+  final Transaksi? transaksiDiedit;
+
+  const LayarTambahTransaksi({super.key, this.transaksiDiedit});
 
   @override
   State<LayarTambahTransaksi> createState() => _KeadaanLayarTambahTransaksi();
@@ -25,7 +28,14 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
     if (!_sudahMuat) {
       _sudahMuat = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.read<ProviderTransaksi>().muatKategori();
+        final provider = context.read<ProviderTransaksi>();
+        final diedit = widget.transaksiDiedit;
+        if (diedit == null) {
+          provider.reset();
+          provider.muatKategori();
+        } else {
+          provider.muatUntukEdit(diedit);
+        }
       });
     }
   }
@@ -45,14 +55,12 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
     if (!mounted) return;
     final status = provider.statusSimpan;
     if (status.adalahSukses) {
+      final pesan = widget.transaksiDiedit == null
+          ? 'Transaksi berhasil disimpan'
+          : 'Transaksi berhasil diperbarui';
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Transaksi ${provider.adalahPemasukan ? 'pemasukan' : 'pengeluaran'} '
-            '${provider.kategoriTerpilih?.nama ?? ''} berhasil disimpan',
-          ),
-        ),
+        SnackBar(content: Text(pesan)),
       );
     } else if (status.adalahError) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -68,7 +76,11 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tambah Transaksi'),
+        title: Text(
+          widget.transaksiDiedit == null
+              ? 'Tambah Transaksi'
+              : 'Edit Transaksi',
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -269,7 +281,9 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: TombolUtama(
-                    label: 'Simpan Transaksi',
+                    label: provider.modeEdit
+                        ? 'Simpan Perubahan'
+                        : 'Simpan Transaksi',
                     ikon: Icons.save,
                     sedangMemuat: sedangMenyimpan,
                     saatDitekan:

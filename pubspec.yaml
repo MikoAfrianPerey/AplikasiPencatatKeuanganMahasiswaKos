@@ -21,7 +21,6 @@ dependencies:
   fl_chart: ^0.63.0
   cupertino_icons: ^1.0.2
   path: ^1.9.0
-  sqflite_common_ffi_web: ^1.2.0
 
 dev_dependencies:
   flutter_test:
