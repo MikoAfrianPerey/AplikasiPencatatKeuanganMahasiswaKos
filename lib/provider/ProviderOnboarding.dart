@@ -60,8 +60,11 @@ class ProviderOnboarding extends ChangeNotifier {
     }
     controllerBatas.clear();
     for (final item in daftar) {
-      controllerBatas[item.id] = TextEditingController(text: '0');
+      final controller = TextEditingController(text: '0');
+      controller.addListener(notifyListeners);
+      controllerBatas[item.id] = controller;
     }
+    controllerPemasukan.addListener(notifyListeners);
   }
 
   int get _totalPemasukan => int.tryParse(controllerPemasukan.text) ?? 0;

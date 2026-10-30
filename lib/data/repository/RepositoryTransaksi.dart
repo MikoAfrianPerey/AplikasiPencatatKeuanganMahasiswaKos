@@ -11,6 +11,7 @@ abstract class RepositoryTransaksi {
     required JenisTransaksi jenis,
     required DateTime tanggal,
     String catatan,
+    String? lokasi,
   });
 
   Future<void> hapus(int id);
@@ -21,6 +22,7 @@ abstract class RepositoryTransaksi {
     JenisTransaksi? jenis,
     DateTime? tanggal,
     String? catatan,
+    String? lokasi,
   });
 }
 
@@ -53,6 +55,7 @@ class RepositoryTransaksiMock implements RepositoryTransaksi {
     required JenisTransaksi jenis,
     required DateTime tanggal,
     String catatan = '',
+    String? lokasi,
   }) async {
     await Future.delayed(jeda);
     final sekarang = DateTime.now();
@@ -65,6 +68,7 @@ class RepositoryTransaksiMock implements RepositoryTransaksi {
       catatan: catatan,
       tanggalTransaksi: tanggal,
       dibuatPada: sekarang,
+      lokasi: lokasi,
     );
     _transaksi.insert(0, transaksi);
     _idBerikutnya++;
@@ -84,6 +88,7 @@ class RepositoryTransaksiMock implements RepositoryTransaksi {
     JenisTransaksi? jenis,
     DateTime? tanggal,
     String? catatan,
+    String? lokasi,
   }) async {
     await Future.delayed(jeda);
     final index = _transaksi.indexWhere((item) => item.id == id);
@@ -98,6 +103,7 @@ class RepositoryTransaksiMock implements RepositoryTransaksi {
       catatan: catatan ?? lama.catatan,
       tanggalTransaksi: tanggal ?? lama.tanggalTransaksi,
       dibuatPada: lama.dibuatPada,
+      lokasi: lokasi ?? lama.lokasi,
     );
   }
 }

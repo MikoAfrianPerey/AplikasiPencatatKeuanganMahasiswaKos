@@ -46,6 +46,9 @@ Minimal 5 user uji coba menyatakan aplikasi membantu mereka sadar pola pengeluar
   [DOKUMENTASI_PERTEMUAN_5.md](./DOKUMENTASI_PERTEMUAN_5.md).
 - **Pertemuan 6** — vertical slice API transaksi (REST + JSON backend), UI loading/empty/error/retry,
   dan 7 unit test API/model. Detail: [DOKUMENTASI_PERTEMUAN_6.md](./DOKUMENTASI_PERTEMUAN_6.md).
+- **Pertemuan 7** — MVP lengkap: autentikasi lokal, notifikasi lokal, dan lokasi
+  transaksi; laporan & batas kategori memakai data nyata. Detail:
+  [DOKUMENTASI_PERTEMUAN_7.md](./DOKUMENTASI_PERTEMUAN_7.md).
 
 ## Cara Menjalankan
 
@@ -59,7 +62,7 @@ Di terminal kedua:
 
 ```bash
 flutter pub get
-flutter test          # 41 test (termasuk API, UI, persistence)
+flutter test          # 50 test (termasuk API, UI, persistence, auth, lokasi)
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
 ```
 

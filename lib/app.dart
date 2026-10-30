@@ -10,6 +10,9 @@ import 'data/repository/RepositoryTransaksi.dart';
 import 'data/repository/RepositoryTransaksiApi.dart';
 import 'inti/routing/RuteAplikasi.dart';
 import 'inti/tema/Tema.dart';
+import 'layanan/LayananAuth.dart';
+import 'layanan/LayananNotifikasi.dart';
+import 'provider/ProviderAuth.dart';
 import 'provider/ProviderOnboarding.dart';
 import 'provider/ProviderPengaturan.dart';
 import 'provider/ProviderTransaksi.dart';
@@ -19,16 +22,15 @@ class AplikasiDompetKos extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ──────────────────────────────────────────────────────────────
-    // LOCAL DATA & PERSISTENCE — SQLite via sqflite
-    // Database helper singleton (BantuanDatabase) diinisialisasi
-    // sekali, lalu di-inject ke setiap repository SQLite.
-    // ──────────────────────────────────────────────────────────────
     final db = BantuanDatabase.instance;
 
     return MultiProvider(
       providers: [
-        // ── Repository Layer (SQLite) ─────────────────────────────
+        Provider<LayananAuth>(create: (_) => LayananAuth()),
+        Provider<LayananNotifikasi>(
+          create: (_) => LayananNotifikasi(),
+          lazy: false,
+        ),
         Provider<RepositoryKategori>(
           create: (_) => RepositoryKategoriSqlite(db),
         ),
@@ -47,7 +49,9 @@ class AplikasiDompetKos extends StatelessWidget {
           dispose: (_, repository) =>
               (repository as RepositoryTransaksiApi).tutup(),
         ),
-        // ── Provider / State Management ───────────────────────────
+        ChangeNotifierProvider<ProviderAuth>(
+          create: (context) => ProviderAuth(context.read<LayananAuth>()),
+        ),
         ChangeNotifierProvider<ProviderOnboarding>(
           create: (context) => ProviderOnboarding(
             context.read<RepositoryKategori>(),
@@ -58,11 +62,14 @@ class AplikasiDompetKos extends StatelessWidget {
           create: (context) => ProviderTransaksi(
             context.read<RepositoryKategori>(),
             context.read<RepositoryTransaksi>(),
+            repositoryPeriode: context.read<RepositoryPeriodeBudget>(),
+            notifikasi: context.read<LayananNotifikasi>(),
           ),
         ),
         ChangeNotifierProvider<ProviderPengaturan>(
           create: (context) => ProviderPengaturan(
             context.read<RepositoryKategori>(),
+            context.read<LayananNotifikasi>(),
           ),
         ),
       ],
@@ -72,7 +79,7 @@ class AplikasiDompetKos extends StatelessWidget {
         theme: Tema.terang,
         darkTheme: Tema.gelap,
         themeMode: ThemeMode.system,
-        initialRoute: RuteAplikasi.onboarding,
+        initialRoute: RuteAplikasi.gerbang,
         routes: RuteAplikasi.rute,
       ),
     );

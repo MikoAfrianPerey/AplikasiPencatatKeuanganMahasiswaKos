@@ -3,19 +3,31 @@ import 'package:flutter/material.dart';
 import '../data/model/Kategori.dart';
 import '../data/model/Transaksi.dart';
 import '../data/repository/RepositoryKategori.dart';
+import '../data/repository/RepositoryPeriodeBudget.dart';
 import '../data/repository/RepositoryTransaksi.dart';
 import '../inti/state/StatusData.dart';
+import '../layanan/LayananNotifikasi.dart';
 
 class ProviderTransaksi extends ChangeNotifier {
   final RepositoryKategori _repositoryKategori;
   final RepositoryTransaksi _repositoryTransaksi;
+  final RepositoryPeriodeBudget? _repositoryPeriode;
+  final LayananNotifikasi? _notifikasi;
 
-  ProviderTransaksi(this._repositoryKategori, this._repositoryTransaksi);
+  ProviderTransaksi(
+    this._repositoryKategori,
+    this._repositoryTransaksi, {
+    RepositoryPeriodeBudget? repositoryPeriode,
+    LayananNotifikasi? notifikasi,
+  })  : _repositoryPeriode = repositoryPeriode,
+        _notifikasi = notifikasi;
 
   StatusData<List<Kategori>> _statusKategori = const StatusData.loading();
   StatusData<Transaksi> _statusSimpan = const StatusData.initial();
   String? _errorForm;
   int? _idTransaksiDiedit;
+  String? _lokasi;
+  String? _infoLokasi;
 
   bool _adalahPemasukan = false;
   String _jumlah = '0';
@@ -33,6 +45,14 @@ class ProviderTransaksi extends ChangeNotifier {
   List<Kategori>? get kategori => _statusKategori.data;
   int? get idTransaksiDiedit => _idTransaksiDiedit;
   bool get modeEdit => _idTransaksiDiedit != null;
+  String? get lokasi => _lokasi;
+  String? get infoLokasi => _infoLokasi;
+
+  void setLokasi(String? lokasi, {String? info}) {
+    _lokasi = lokasi;
+    _infoLokasi = info;
+    notifyListeners();
+  }
 
   Future<void> muatKategori() async {
     _statusKategori = const StatusData.loading();
@@ -58,6 +78,8 @@ class ProviderTransaksi extends ChangeNotifier {
     _jumlah = transaksi.jumlah.toString();
     _tanggal = transaksi.tanggalTransaksi;
     controllerCatatan.text = transaksi.catatan;
+    _lokasi = transaksi.lokasi;
+    _infoLokasi = transaksi.lokasi;
     notifyListeners();
     await muatKategori();
     for (final item in _statusKategori.data ?? const <Kategori>[]) {
@@ -114,6 +136,8 @@ class ProviderTransaksi extends ChangeNotifier {
     _tanggal = DateTime.now();
     _errorForm = null;
     controllerCatatan.clear();
+    _lokasi = null;
+    _infoLokasi = null;
     notifyListeners();
   }
 
@@ -154,6 +178,7 @@ class ProviderTransaksi extends ChangeNotifier {
               : JenisTransaksi.pengeluaran,
           tanggal: _tanggal,
           catatan: controllerCatatan.text.trim(),
+          lokasi: _lokasi,
         );
         final tersimpan =
             await _repositoryTransaksi.ambilBerdasarkanId(_idTransaksiDiedit!);
@@ -168,13 +193,42 @@ class ProviderTransaksi extends ChangeNotifier {
               : JenisTransaksi.pengeluaran,
           tanggal: _tanggal,
           catatan: controllerCatatan.text.trim(),
+          lokasi: _lokasi,
         );
       }
       _statusSimpan = StatusData.sukses(transaksi);
+      await _cekBatasKategori(transaksi);
     } on Exception catch (e) {
       _statusSimpan = StatusData.error(e.toString());
     }
     notifyListeners();
+  }
+
+  Future<void> _cekBatasKategori(Transaksi transaksi) async {
+    final notifikasi = _notifikasi;
+    final repositoryPeriode = _repositoryPeriode;
+    if (notifikasi == null || repositoryPeriode == null) return;
+    if (transaksi.jenisTransaksi != JenisTransaksi.pengeluaran) return;
+    try {
+      final periode = await repositoryPeriode.ambilPeriodeAktif();
+      if (periode == null) return;
+      final batas = await repositoryPeriode.ambilBatasPeriode(periode.id);
+      final cocok = batas.where((b) => b.idKategori == transaksi.idKategori);
+      if (cocok.isEmpty) return;
+      final semua = await _repositoryTransaksi.ambilSemua();
+      final terpakai = semua
+          .where((t) =>
+              t.idKategori == transaksi.idKategori &&
+              t.jenisTransaksi == JenisTransaksi.pengeluaran)
+          .fold(0, (total, t) => total + t.jumlah);
+      if (terpakai >= cocok.first.jumlahBatas) {
+        await notifikasi.kirimPeringatanBatas(
+          _kategoriTerpilih?.nama ?? 'kategori ini',
+        );
+      }
+    } on Exception catch (_) {
+      // Kegagalan notifikasi tidak boleh menggagalkan penyimpanan transaksi.
+    }
   }
 
   @override

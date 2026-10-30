@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../data/model/BudgetKategori.dart';
+import '../../../data/model/Kategori.dart';
+import '../../../data/repository/RepositoryKategori.dart';
+import '../../../data/repository/RepositoryPeriodeBudget.dart';
+import '../../../inti/routing/RuteAplikasi.dart';
+import '../../../inti/utils/PemformatMataUang.dart';
+import '../../../provider/ProviderAuth.dart';
 import '../../../provider/ProviderPengaturan.dart';
 
 class LayarPengaturan extends StatefulWidget {
@@ -11,6 +18,29 @@ class LayarPengaturan extends StatefulWidget {
 }
 
 class _KeadaanLayarPengaturan extends State<LayarPengaturan> {
+  bool _sudahCek = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_sudahCek) return;
+    _sudahCek = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProviderPengaturan>().periksaIzinNotifikasi();
+    });
+  }
+
+  Future<(List<BudgetKategori>, List<Kategori>)> _muatBatas() async {
+    final periode = context.read<RepositoryPeriodeBudget>();
+    final kategori = context.read<RepositoryKategori>();
+    final aktif = await periode.ambilPeriodeAktif();
+    if (aktif == null) {
+      return (<BudgetKategori>[], await kategori.ambilSemua());
+    }
+    final batas = await periode.ambilBatasPeriode(aktif.id);
+    return (batas, await kategori.ambilSemua());
+  }
+
   Future<bool?> _konfirmasiReset() {
     return showDialog<bool>(
       context: context,
@@ -46,55 +76,148 @@ class _KeadaanLayarPengaturan extends State<LayarPengaturan> {
     }
   }
 
+  Future<void> _keluar(ProviderAuth auth) async {
+    final konfirmasi = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Keluar dari Akun?'),
+        content: const Text(
+          'Data transaksi tetap tersimpan. Kamu dapat masuk kembali kapan saja.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Keluar'),
+          ),
+        ],
+      ),
+    );
+    if (konfirmasi != true || !mounted) return;
+    await auth.keluar();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      RuteAplikasi.masuk,
+      (_) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
     final pengaturan = context.watch<ProviderPengaturan>();
+    final auth = context.watch<ProviderAuth>();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Pengaturan')),
       body: ListView(
         children: [
+          Card(
+            child: ListTile(
+              leading: CircleAvatar(
+                child: Text(
+                  (auth.pengguna?.nama.isNotEmpty ?? false)
+                      ? auth.pengguna!.nama[0].toUpperCase()
+                      : '?',
+                ),
+              ),
+              title: Text(auth.pengguna?.nama ?? 'Belum masuk'),
+              subtitle: Text(auth.pengguna?.email ?? '-'),
+              trailing: TextButton(
+                onPressed: () => _keluar(auth),
+                child: const Text('Keluar'),
+              ),
+            ),
+          ),
           _bagianHeader('Batas Kategori', tema),
           Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.restaurant, color: Colors.orange),
-                  title: const Text('Makan'),
-                  subtitle: const Text('Batas: Rp 600.000'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
-                ),
-                ListTile(
-                  leading: const Icon(Icons.home, color: Colors.green),
-                  title: const Text('Kos'),
-                  subtitle: const Text('Batas: Rp 500.000'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
-                ),
-                ListTile(
-                  leading:
-                      const Icon(Icons.directions_bus, color: Colors.blue),
-                  title: const Text('Transport'),
-                  subtitle: const Text('Batas: Rp 200.000'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
-                ),
-                ListTile(
-                  leading: const Icon(Icons.category, color: Colors.purple),
-                  title: const Text('Lain-lain'),
-                  subtitle: const Text('Batas: Rp 200.000'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
-                ),
-              ],
+            child: ListTile(
+              leading: const Icon(Icons.edit_calendar),
+              title: const Text('Atur Periode Anggaran'),
+              subtitle: const Text('Ubah total pemasukan dan batas kategori'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () =>
+                  Navigator.pushNamed(context, RuteAplikasi.onboarding),
+            ),
+          ),
+          Card(
+            child: FutureBuilder<(List<BudgetKategori>, List<Kategori>)>(
+              future: _muatBatas(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (snapshot.hasError) {
+                  return ListTile(
+                    leading: const Icon(Icons.error_outline),
+                    title: const Text('Gagal memuat batas kategori'),
+                    subtitle: const Text(
+                      'Periksa penyimpanan lalu coba lagi.',
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: () => setState(() {}),
+                    ),
+                  );
+                }
+                final batas = snapshot.data?.$1 ?? const <BudgetKategori>[];
+                final kategori = snapshot.data?.$2 ?? const <Kategori>[];
+                if (batas.isEmpty) {
+                  return const ListTile(
+                    leading: Icon(Icons.inbox),
+                    title: Text('Belum ada batas kategori'),
+                    subtitle: Text(
+                      'Atur periode anggaran untuk membuat batas.',
+                    ),
+                  );
+                }
+                return Column(
+                  children: batas.map((item) {
+                    final cocok = kategori.where(
+                      (k) => k.id == item.idKategori,
+                    );
+                    return ListTile(
+                      leading: const Icon(Icons.category_outlined),
+                      title: Text(cocok.isEmpty ? 'Lain-lain' : cocok.first.nama),
+                      subtitle: Text(
+                        'Batas: ${PemformatMataUang.format(item.jumlahBatas)}',
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
             ),
           ),
           _bagianHeader('Notifikasi', tema),
           Card(
             child: Column(
               children: [
+                ListTile(
+                  leading: Icon(
+                    pengaturan.izinNotifikasi
+                        ? Icons.notifications_active
+                        : Icons.notifications_off,
+                  ),
+                  title: const Text('Izin Notifikasi'),
+                  subtitle: Text(
+                    pengaturan.izinNotifikasi
+                        ? 'Diizinkan. Pengingat dan peringatan dapat dikirim.'
+                        : 'Belum diizinkan. Aktifkan agar pengingat muncul.',
+                  ),
+                  trailing: pengaturan.izinNotifikasi
+                      ? const Icon(Icons.check_circle, color: Colors.green)
+                      : TextButton(
+                          onPressed: pengaturan.mintaIzinNotifikasi,
+                          child: const Text('Izinkan'),
+                        ),
+                ),
                 ListTile(
                   leading: const Icon(Icons.notifications),
                   title: const Text('Ambang Batas Peringatan'),
@@ -114,7 +237,18 @@ class _KeadaanLayarPengaturan extends State<LayarPengaturan> {
                   title: const Text('Pengingat Harian'),
                   subtitle: const Text('Pengingat catat transaksi pukul 21:00'),
                   value: pengaturan.pengingatHarian,
-                  onChanged: pengaturan.setPengingatHarian,
+                  onChanged: pengaturan.sedangMengaturNotifikasi
+                      ? null
+                      : pengaturan.setPengingatHarian,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.send),
+                  title: const Text('Kirim Notifikasi Uji'),
+                  subtitle: const Text(
+                    'Memeriksa apakah notifikasi tampil di perangkat.',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: pengaturan.kirimUjiNotifikasi,
                 ),
               ],
             ),

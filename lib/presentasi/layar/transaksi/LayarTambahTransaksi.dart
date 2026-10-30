@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
 import '../../../data/model/Kategori.dart';
 import '../../../data/model/Transaksi.dart';
+import '../../../layanan/LayananLokasi.dart';
 import '../../../inti/utils/PemetaIkon.dart';
 import '../../../inti/utils/PemformatMataUang.dart';
 import '../../../inti/utils/PemformatTanggal.dart';
@@ -21,6 +23,7 @@ class LayarTambahTransaksi extends StatefulWidget {
 
 class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
   bool _sudahMuat = false;
+  bool _sedangMengambilLokasi = false;
 
   @override
   void didChangeDependencies() {
@@ -48,6 +51,31 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
       lastDate: DateTime.now(),
     );
     if (dipilih != null) provider.setTanggal(dipilih);
+  }
+
+  Future<void> _ambilLokasi(ProviderTransaksi provider) async {
+    setState(() => _sedangMengambilLokasi = true);
+    final hasil = await LayananLokasi().ambilLokasi();
+    if (!mounted) return;
+    setState(() => _sedangMengambilLokasi = false);
+    if (hasil.ada) {
+      provider.setLokasi(hasil.label, info: 'Lokasi: ${hasil.label}');
+    } else {
+      provider.setLokasi(null);
+      _tampilkanPesanLokasi(hasil.pesan ?? 'Lokasi tidak tersedia');
+    }
+  }
+
+  void _tampilkanPesanLokasi(String pesan) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(pesan),
+        action: SnackBarAction(
+          label: 'Pengaturan',
+          onPressed: () => Geolocator.openAppSettings(),
+        ),
+      ),
+    );
   }
 
   Future<void> _simpan(ProviderTransaksi provider) async {
@@ -278,6 +306,29 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.place_outlined),
+                  title: const Text('Lokasi Transaksi'),
+                  subtitle: Text(
+                    provider.infoLokasi ??
+                        'Opsional - lampirkan koordinat saat mencatat',
+                  ),
+                  trailing: provider.lokasi != null
+                      ? IconButton(
+                          tooltip: 'Hapus lokasi',
+                          icon: const Icon(Icons.close),
+                          onPressed: () => provider.setLokasi(null),
+                        )
+                      : const Icon(Icons.my_location),
+                  onTap: _sedangMengambilLokasi
+                      ? null
+                      : () => _ambilLokasi(provider),
+                ),
+                if (_sedangMengambilLokasi)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: LinearProgressIndicator(),
+                  ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: TombolUtama(

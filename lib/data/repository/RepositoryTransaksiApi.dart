@@ -46,6 +46,7 @@ class RepositoryTransaksiApi implements RepositoryTransaksi {
     required JenisTransaksi jenis,
     required DateTime tanggal,
     String catatan = '',
+    String? lokasi,
   }) async {
     final payload = {
       'id_periode_budget': 1,
@@ -56,6 +57,7 @@ class RepositoryTransaksiApi implements RepositoryTransaksi {
       'catatan': catatan,
       'tanggal_transaksi': tanggal.toIso8601String(),
       'dibuat_pada': DateTime.now().toIso8601String(),
+      'lokasi': lokasi,
     };
     final response = await _kirim('POST', _endpoint, payload);
     return Transaksi.dariMap(jsonDecode(response) as Map<String, dynamic>);
@@ -74,6 +76,7 @@ class RepositoryTransaksiApi implements RepositoryTransaksi {
     JenisTransaksi? jenis,
     DateTime? tanggal,
     String? catatan,
+    String? lokasi,
   }) async {
     final payload = <String, dynamic>{};
     if (idKategori != null) payload['id_kategori'] = idKategori;
@@ -87,6 +90,9 @@ class RepositoryTransaksiApi implements RepositoryTransaksi {
     }
     if (catatan != null) {
       payload['catatan'] = catatan;
+    }
+    if (lokasi != null) {
+      payload['lokasi'] = lokasi;
     }
     await _kirim(
         'PUT', _endpoint.replace(queryParameters: {'id': '$id'}), payload);

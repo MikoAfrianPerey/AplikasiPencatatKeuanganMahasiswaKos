@@ -9,6 +9,7 @@ class Transaksi {
   final String catatan;
   final DateTime tanggalTransaksi;
   final DateTime dibuatPada;
+  final String? lokasi;
 
   const Transaksi({
     required this.id,
@@ -19,6 +20,7 @@ class Transaksi {
     this.catatan = '',
     required this.tanggalTransaksi,
     required this.dibuatPada,
+    this.lokasi,
   });
 
   factory Transaksi.dariMap(Map<String, dynamic> map) {
@@ -30,7 +32,8 @@ class Transaksi {
         (jenis != 'PEMASUKAN' && jenis != 'PENGELUARAN') ||
         map['tanggal_transaksi'] is! String ||
         map['dibuat_pada'] is! String ||
-        (map['catatan'] != null && map['catatan'] is! String)) {
+        (map['catatan'] != null && map['catatan'] is! String) ||
+        (map['lokasi'] != null && map['lokasi'] is! String)) {
       throw const FormatException('Data transaksi tidak valid');
     }
     return Transaksi(
@@ -44,6 +47,7 @@ class Transaksi {
       catatan: (map['catatan'] as String?) ?? '',
       tanggalTransaksi: DateTime.parse(map['tanggal_transaksi'] as String),
       dibuatPada: DateTime.parse(map['dibuat_pada'] as String),
+      lokasi: map['lokasi'] as String?,
     );
   }
 
@@ -59,6 +63,7 @@ class Transaksi {
       'catatan': catatan,
       'tanggal_transaksi': tanggalTransaksi.toIso8601String(),
       'dibuat_pada': dibuatPada.toIso8601String(),
+      'lokasi': lokasi,
     };
   }
 }

@@ -53,11 +53,12 @@ class BantuanDatabase {
 
     return openDatabase(
       jalur,
-      version: 1,
+      version: 2,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
       onCreate: _buatTabel,
+      onUpgrade: _migrasi,
     );
   }
 
@@ -110,10 +111,17 @@ class BantuanDatabase {
         catatan TEXT DEFAULT '',
         tanggal_transaksi TEXT NOT NULL,
         dibuat_pada TEXT NOT NULL,
+        lokasi TEXT,
         FOREIGN KEY (id_periode_budget) REFERENCES periode_budget(id),
         FOREIGN KEY (id_kategori) REFERENCES kategori(id)
       )
     ''');
+  }
+
+  Future<void> _migrasi(Database db, int lama, int baru) async {
+    if (lama < 2) {
+      await db.execute('ALTER TABLE transaksi ADD COLUMN lokasi TEXT');
+    }
   }
 
   Future<int> sisipkan(String tabel, Map<String, dynamic> data) async {

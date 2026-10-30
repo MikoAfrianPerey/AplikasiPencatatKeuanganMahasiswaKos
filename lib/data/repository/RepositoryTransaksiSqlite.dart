@@ -35,6 +35,7 @@ class RepositoryTransaksiSqlite implements RepositoryTransaksi {
     required JenisTransaksi jenis,
     required DateTime tanggal,
     String catatan = '',
+    String? lokasi,
   }) async {
     final periodeAktif = await _db.kueri(
       'periode_budget',
@@ -69,6 +70,7 @@ class RepositoryTransaksiSqlite implements RepositoryTransaksi {
       'catatan': catatan,
       'tanggal_transaksi': tanggal.toIso8601String(),
       'dibuat_pada': sekarang.toIso8601String(),
+      'lokasi': lokasi,
     });
 
     return Transaksi(
@@ -80,6 +82,7 @@ class RepositoryTransaksiSqlite implements RepositoryTransaksi {
       catatan: catatan,
       tanggalTransaksi: tanggal,
       dibuatPada: sekarang,
+      lokasi: lokasi,
     );
   }
 
@@ -100,6 +103,7 @@ class RepositoryTransaksiSqlite implements RepositoryTransaksi {
     JenisTransaksi? jenis,
     DateTime? tanggal,
     String? catatan,
+    String? lokasi,
   }) async {
     final Map<String, dynamic> data = {};
     if (idKategori != null) data['id_kategori'] = idKategori;
@@ -112,6 +116,7 @@ class RepositoryTransaksiSqlite implements RepositoryTransaksi {
       data['tanggal_transaksi'] = tanggal.toIso8601String();
     }
     if (catatan != null) data['catatan'] = catatan;
+    if (lokasi != null) data['lokasi'] = lokasi;
 
     if (data.isEmpty) return;
 

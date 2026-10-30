@@ -118,11 +118,13 @@ bool _valid(Map<String, dynamic> body, {required bool create}) {
     'catatan',
     'tanggal_transaksi',
     'dibuat_pada',
+    'lokasi',
   };
   if (body.keys.any((key) => !allowed.contains(key))) {
     return false;
   }
-  if (create && !body.keys.toSet().containsAll(allowed)) {
+  if (create &&
+      !body.keys.toSet().containsAll(allowed.difference({'lokasi'}))) {
     return false;
   }
   if (body.containsKey('id_periode_budget') &&
@@ -142,6 +144,11 @@ bool _valid(Map<String, dynamic> body, {required bool create}) {
     return false;
   }
   if (body.containsKey('catatan') && body['catatan'] is! String) {
+    return false;
+  }
+  if (body.containsKey('lokasi') &&
+      body['lokasi'] != null &&
+      body['lokasi'] is! String) {
     return false;
   }
   for (final key in ['tanggal_transaksi', 'dibuat_pada']) {
