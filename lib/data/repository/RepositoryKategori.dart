@@ -25,7 +25,8 @@ class RepositoryKategoriMock implements RepositoryKategori {
   Future<List<Kategori>> ambilSemua() async {
     await Future.delayed(jeda);
     if (_modeError) {
-      throw Exception('Gagal memuat kategori. Periksa penyimpanan dan coba lagi.');
+      throw Exception(
+          'Gagal memuat kategori. Periksa penyimpanan dan coba lagi.');
     }
     return List.unmodifiable(_kategori);
   }

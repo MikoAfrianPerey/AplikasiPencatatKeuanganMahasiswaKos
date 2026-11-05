@@ -7,6 +7,7 @@ import '../../../data/model/Transaksi.dart';
 import '../../../data/repository/RepositoryKategori.dart';
 import '../../../data/repository/RepositoryTransaksi.dart';
 import '../../../inti/utils/PemformatMataUang.dart';
+import '../../../inti/utils/TataLetak.dart';
 import '../../widget/StateKosong.dart';
 import '../../widget/TombolUtama.dart';
 
@@ -44,8 +45,10 @@ class _KeadaanLayarLaporan extends State<LayarLaporan>
       _error = null;
     });
     try {
-      final transaksi = await context.read<RepositoryTransaksi>().ambilSemua();
-      final kategori = await context.read<RepositoryKategori>().ambilSemua();
+      final repoTransaksi = context.read<RepositoryTransaksi>();
+      final repoKategori = context.read<RepositoryKategori>();
+      final transaksi = await repoTransaksi.ambilSemua();
+      final kategori = await repoKategori.ambilSemua();
       if (!mounted) return;
       setState(() {
         _transaksi = transaksi;
@@ -96,15 +99,17 @@ class _KeadaanLayarLaporan extends State<LayarLaporan>
         ),
       ),
       body: _sedangMemuat
-          ? const Center(child: CircularProgressIndicator())
+          ? const _PemuatanLaporan()
           : _error != null
               ? _bangunError()
-              : TabBarView(
-                  controller: _kontrolTab,
-                  children: [
-                    _tabLaporan(true),
-                    _tabLaporan(false),
-                  ],
+              : LayarTataLetak(
+                  child: TabBarView(
+                    controller: _kontrolTab,
+                    children: [
+                      _tabLaporan(true),
+                      _tabLaporan(false),
+                    ],
+                  ),
                 ),
     );
   }
@@ -169,11 +174,14 @@ class _KeadaanLayarLaporan extends State<LayarLaporan>
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  PemformatMataUang.format(total),
-                  style: tema.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    PemformatMataUang.format(total),
+                    style: tema.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
                   ),
                 ),
               ],
@@ -328,6 +336,45 @@ class _KeadaanLayarLaporan extends State<LayarLaporan>
         ),
         const SizedBox(height: 24),
       ],
+    );
+  }
+}
+
+class LayarTataLetak extends StatelessWidget {
+  final Widget child;
+
+  const LayarTataLetak({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return TataLetak.pusatkan(context, child);
+  }
+}
+
+class _PemuatanLaporan extends StatelessWidget {
+  const _PemuatanLaporan();
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    return Center(
+      child: Semantics(
+        liveRegion: true,
+        label: 'Memuat laporan',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              'Menghitung laporan...',
+              style: tema.textTheme.bodyLarge?.copyWith(
+                color: tema.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

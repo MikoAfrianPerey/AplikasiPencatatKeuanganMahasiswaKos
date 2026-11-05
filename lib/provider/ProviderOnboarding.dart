@@ -121,7 +121,8 @@ class ProviderOnboarding extends ChangeNotifier {
 
     final totalBatas = _totalBatas;
     if (totalBatas > _totalPemasukan) {
-      _errorTotalBatas = 'Total batas kategori (${PemformatMataUang.format(totalBatas)}) '
+      _errorTotalBatas =
+          'Total batas kategori (${PemformatMataUang.format(totalBatas)}) '
           'melebihi total pemasukan (${PemformatMataUang.format(_totalPemasukan)}). '
           'Kurangi batas atau tambah pemasukan.';
       notifyListeners();

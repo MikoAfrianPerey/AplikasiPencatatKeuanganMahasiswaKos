@@ -73,8 +73,7 @@ class ProviderTransaksi extends ChangeNotifier {
 
   Future<void> muatUntukEdit(Transaksi transaksi) async {
     _idTransaksiDiedit = transaksi.id;
-    _adalahPemasukan =
-        transaksi.jenisTransaksi == JenisTransaksi.pemasukan;
+    _adalahPemasukan = transaksi.jenisTransaksi == JenisTransaksi.pemasukan;
     _jumlah = transaksi.jumlah.toString();
     _tanggal = transaksi.tanggalTransaksi;
     controllerCatatan.text = transaksi.catatan;

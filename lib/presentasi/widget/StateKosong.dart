@@ -16,33 +16,39 @@ class StateKosong extends StatelessWidget {
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            ikon,
-            size: 80,
-            color: tema.colorScheme.onSurfaceVariant.withOpacity(0.4),
+    return Semantics(
+      container: true,
+      label: '$judul. $pesan',
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                ikon,
+                size: 80,
+                color: tema.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                judul,
+                style: tema.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                pesan,
+                style: tema.textTheme.bodyMedium?.copyWith(
+                  color: tema.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            judul,
-            style: tema.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            pesan,
-            style: tema.textTheme.bodyMedium?.copyWith(
-              color: tema.colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -102,7 +102,8 @@ class _KeadaanLayarMasuk extends State<LayarMasuk> {
                   labelText: 'Sandi',
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
-                    tooltip: _sandiTerlihat ? 'Sembunyikan sandi' : 'Lihat sandi',
+                    tooltip:
+                        _sandiTerlihat ? 'Sembunyikan sandi' : 'Lihat sandi',
                     icon: Icon(
                       _sandiTerlihat ? Icons.visibility_off : Icons.visibility,
                     ),

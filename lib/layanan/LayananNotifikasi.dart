@@ -11,7 +11,8 @@ class LayananNotifikasi {
 
   Future<bool> inisialisasi() async {
     tz.initializeTimeZones();
-    const pengaturanAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const pengaturanAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     final berhasil = await _plugin.initialize(
       const InitializationSettings(android: pengaturanAndroid),
     );

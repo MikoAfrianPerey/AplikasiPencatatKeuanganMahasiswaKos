@@ -8,6 +8,8 @@ import '../../../layanan/LayananLokasi.dart';
 import '../../../inti/utils/PemetaIkon.dart';
 import '../../../inti/utils/PemformatMataUang.dart';
 import '../../../inti/utils/PemformatTanggal.dart';
+import '../../../inti/utils/TataLetak.dart';
+import '../../../inti/utils/UmpanBalik.dart';
 import '../../../provider/ProviderTransaksi.dart';
 import '../../widget/StateKosong.dart';
 import '../../widget/TombolUtama.dart';
@@ -49,17 +51,20 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
       initialDate: provider.tanggal,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
+      helpText: 'Pilih tanggal transaksi',
     );
     if (dipilih != null) provider.setTanggal(dipilih);
   }
 
   Future<void> _ambilLokasi(ProviderTransaksi provider) async {
     setState(() => _sedangMengambilLokasi = true);
+    UmpanBalik.info(context, 'Mengambil lokasi perangkat...');
     final hasil = await LayananLokasi().ambilLokasi();
     if (!mounted) return;
     setState(() => _sedangMengambilLokasi = false);
     if (hasil.ada) {
       provider.setLokasi(hasil.label, info: 'Lokasi: ${hasil.label}');
+      UmpanBalik.sukses(context, 'Lokasi berhasil dilampirkan');
     } else {
       provider.setLokasi(null);
       _tampilkanPesanLokasi(hasil.pesan ?? 'Lokasi tidak tersedia');
@@ -70,6 +75,7 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(pesan),
+        duration: const Duration(seconds: 5),
         action: SnackBarAction(
           label: 'Pengaturan',
           onPressed: () => Geolocator.openAppSettings(),
@@ -86,14 +92,9 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
       final pesan = widget.transaksiDiedit == null
           ? 'Transaksi berhasil disimpan'
           : 'Transaksi berhasil diperbarui';
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(pesan)),
-      );
+      Navigator.pop(context, pesan);
     } else if (status.adalahError) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(status.pesan ?? 'Gagal menyimpan transaksi')),
-      );
+      UmpanBalik.galat(context, status.pesan ?? 'Gagal menyimpan transaksi');
     }
   }
 
@@ -148,7 +149,7 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
   }
 
   Widget _bangunKosong(ProviderTransaksi provider) {
-    return Center(
+    return const Center(
       child: StateKosong(
         ikon: Icons.category_outlined,
         judul: 'Belum Ada Kategori',
@@ -207,141 +208,149 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
       children: [
         Expanded(
           child: SingleChildScrollView(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SegmentedButton<bool>(
-                    segments: const [
-                      ButtonSegment(value: false, label: Text('Pengeluaran')),
-                      ButtonSegment(value: true, label: Text('Pemasukan')),
-                    ],
-                    selected: {provider.adalahPemasukan},
-                    onSelectionChanged: (pilihan) =>
-                        provider.setJenis(pilihan.first),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    PemformatMataUang.format(int.tryParse(provider.jumlah) ?? 0),
-                    style: tema.textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: provider.adalahPemasukan
-                          ? Colors.green
-                          : Colors.red,
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            child: TataLetak.pusatkan(
+              context,
+              Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: SegmentedButton<bool>(
+                      segments: const [
+                        ButtonSegment(value: false, label: Text('Pengeluaran')),
+                        ButtonSegment(value: true, label: Text('Pemasukan')),
+                      ],
+                      selected: {provider.adalahPemasukan},
+                      onSelectionChanged: (pilihan) =>
+                          provider.setJenis(pilihan.first),
                     ),
                   ),
-                ),
-                if (provider.errorForm != null) ...[
-                  const SizedBox(height: 8),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: tema.colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(8),
+                    child: Text(
+                      PemformatMataUang.format(
+                          int.tryParse(provider.jumlah) ?? 0),
+                      style: tema.textTheme.headlineLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: provider.adalahPemasukan
+                            ? Colors.green
+                            : Colors.red,
                       ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.error_outline,
-                              color: tema.colorScheme.onErrorContainer),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              provider.errorForm!,
-                              style: TextStyle(
-                                color: tema.colorScheme.onErrorContainer,
+                    ),
+                  ),
+                  if (provider.errorForm != null) ...[
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: tema.colorScheme.errorContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline,
+                                color: tema.colorScheme.onErrorContainer),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                provider.errorForm!,
+                                style: TextStyle(
+                                  color: tema.colorScheme.onErrorContainer,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 120,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: daftar.length,
+                      itemBuilder: (context, index) {
+                        final item = daftar[index];
+                        final terpilih =
+                            provider.kategoriTerpilih?.id == item.id;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            label: Text(item.nama),
+                            avatar: Icon(
+                              PemetaIkon.dariNama(item.namaIkon),
+                              color: Color(item.nilaiWarna),
+                            ),
+                            selected: terpilih,
+                            onSelected: (_) => provider.setKategori(item),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.calendar_today),
+                    title: const Text('Tanggal Transaksi'),
+                    subtitle:
+                        Text(PemformatTanggal.formatPanjang(provider.tanggal)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _pilihTanggal(provider),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      controller: provider.controllerCatatan,
+                      decoration: const InputDecoration(
+                        labelText: 'Catatan (opsional)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.note),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    leading: const Icon(Icons.place_outlined),
+                    title: const Text('Lokasi Transaksi'),
+                    subtitle: Text(
+                      provider.infoLokasi ??
+                          'Opsional - lampirkan koordinat saat mencatat',
+                    ),
+                    trailing: provider.lokasi != null
+                        ? IconButton(
+                            tooltip: 'Hapus lokasi',
+                            icon: const Icon(Icons.close),
+                            onPressed: () => provider.setLokasi(null),
+                          )
+                        : const Icon(Icons.my_location),
+                    onTap: _sedangMengambilLokasi
+                        ? null
+                        : () => _ambilLokasi(provider),
+                  ),
+                  if (_sedangMengambilLokasi)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: LinearProgressIndicator(),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: TombolUtama(
+                      label: provider.modeEdit
+                          ? 'Simpan Perubahan'
+                          : 'Simpan Transaksi',
+                      ikon: Icons.save,
+                      sedangMemuat: sedangMenyimpan,
+                      saatDitekan:
+                          sedangMenyimpan ? null : () => _simpan(provider),
                     ),
                   ),
                 ],
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 120,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: daftar.length,
-                    itemBuilder: (context, index) {
-                      final item = daftar[index];
-                      final terpilih =
-                          provider.kategoriTerpilih?.id == item.id;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(item.nama),
-                          avatar: Icon(
-                            PemetaIkon.dariNama(item.namaIkon),
-                            color: Color(item.nilaiWarna),
-                          ),
-                          selected: terpilih,
-                          onSelected: (_) => provider.setKategori(item),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.calendar_today),
-                  title: const Text('Tanggal Transaksi'),
-                  subtitle: Text(PemformatTanggal.formatPanjang(provider.tanggal)),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _pilihTanggal(provider),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: TextField(
-                    controller: provider.controllerCatatan,
-                    decoration: const InputDecoration(
-                      labelText: 'Catatan (opsional)',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.note),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  leading: const Icon(Icons.place_outlined),
-                  title: const Text('Lokasi Transaksi'),
-                  subtitle: Text(
-                    provider.infoLokasi ??
-                        'Opsional - lampirkan koordinat saat mencatat',
-                  ),
-                  trailing: provider.lokasi != null
-                      ? IconButton(
-                          tooltip: 'Hapus lokasi',
-                          icon: const Icon(Icons.close),
-                          onPressed: () => provider.setLokasi(null),
-                        )
-                      : const Icon(Icons.my_location),
-                  onTap: _sedangMengambilLokasi
-                      ? null
-                      : () => _ambilLokasi(provider),
-                ),
-                if (_sedangMengambilLokasi)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: LinearProgressIndicator(),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: TombolUtama(
-                    label: provider.modeEdit
-                        ? 'Simpan Perubahan'
-                        : 'Simpan Transaksi',
-                    ikon: Icons.save,
-                    sedangMemuat: sedangMenyimpan,
-                    saatDitekan:
-                        sedangMenyimpan ? null : () => _simpan(provider),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -349,35 +358,34 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: TataLetak.lebar(context) ? 6 : 4,
             childAspectRatio: 1.6,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
           ),
           itemCount: 12,
           itemBuilder: (context, index) {
             final tombol = _tombolKeypad(index);
             final adalahHapus = tombol == '⌫';
-            return Padding(
-              padding: const EdgeInsets.all(4),
-              child: FilledButton(
-                onPressed: sedangMenyimpan
-                    ? null
-                    : adalahHapus
-                        ? () => provider.hapus()
-                        : () => provider.ketik(tombol),
-                style: FilledButton.styleFrom(
-                  backgroundColor: adalahHapus
-                      ? tema.colorScheme.errorContainer
-                      : tema.colorScheme.surfaceContainerHighest,
-                  foregroundColor: adalahHapus
-                      ? tema.colorScheme.onErrorContainer
-                      : tema.colorScheme.onSurface,
-                ),
-                child: Text(
-                  tombol,
-                  style: tema.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+            return FilledButton(
+              onPressed: sedangMenyimpan
+                  ? null
+                  : adalahHapus
+                      ? () => provider.hapus()
+                      : () => provider.ketik(tombol),
+              style: FilledButton.styleFrom(
+                backgroundColor: adalahHapus
+                    ? tema.colorScheme.errorContainer
+                    : tema.colorScheme.surfaceContainerHighest,
+                foregroundColor: adalahHapus
+                    ? tema.colorScheme.onErrorContainer
+                    : tema.colorScheme.onSurface,
+              ),
+              child: Text(
+                tombol,
+                style: tema.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             );
@@ -388,7 +396,20 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
   }
 
   String _tombolKeypad(int index) {
-    const tombol = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '000', '0', '⌫'];
+    const tombol = [
+      '7',
+      '8',
+      '9',
+      '⌫',
+      '4',
+      '5',
+      '6',
+      '000',
+      '1',
+      '2',
+      '3',
+      '0'
+    ];
     return tombol[index];
   }
 }

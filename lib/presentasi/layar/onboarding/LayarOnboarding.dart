@@ -5,6 +5,8 @@ import '../../../data/model/Kategori.dart';
 import '../../../inti/routing/RuteAplikasi.dart';
 import '../../../inti/utils/PemetaIkon.dart';
 import '../../../inti/utils/PemformatMataUang.dart';
+import '../../../inti/utils/TataLetak.dart';
+import '../../../inti/utils/UmpanBalik.dart';
 import '../../../provider/ProviderOnboarding.dart';
 import '../../widget/BidangTeks.dart';
 import '../../widget/StateKosong.dart';
@@ -40,9 +42,7 @@ class _KeadaanLayarOnboarding extends State<LayarOnboarding> {
     if (status.adalahSukses) {
       Navigator.pushReplacementNamed(context, RuteAplikasi.dashboard);
     } else if (status.adalahError) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(status.pesan ?? 'Gagal menyimpan periode')),
-      );
+      UmpanBalik.galat(context, status.pesan ?? 'Gagal menyimpan periode');
     }
   }
 
@@ -88,7 +88,7 @@ class _KeadaanLayarOnboarding extends State<LayarOnboarding> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          StateKosong(
+          const StateKosong(
             ikon: Icons.category_outlined,
             judul: 'Belum Ada Kategori',
             pesan: 'Kategori default belum dibuat. Tambahkan dulu '
@@ -152,148 +152,157 @@ class _KeadaanLayarOnboarding extends State<LayarOnboarding> {
     final sedangMenyimpan = provider.statusSimpan.sedangLoading;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Form(
-        key: _kunciForm,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 16),
-            Icon(
-              Icons.account_balance_wallet,
-              size: 72,
-              color: tema.colorScheme.primary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Selamat Datang di DompetKos',
-              style: tema.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+      padding: EdgeInsets.fromLTRB(
+        24,
+        24,
+        24,
+        24 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: TataLetak.pusatkan(
+        context,
+        Form(
+          key: _kunciForm,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 16),
+              Icon(
+                Icons.account_balance_wallet,
+                size: 72,
+                color: tema.colorScheme.primary,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Masukkan pemasukan bulananmu dan atur batas per kategori.',
-              style: tema.textTheme.bodyMedium?.copyWith(
-                color: tema.colorScheme.onSurfaceVariant,
+              const SizedBox(height: 16),
+              Text(
+                'Selamat Datang di DompetKos',
+                style: tema.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 28),
-            BidangTeks(
-              label: 'Total Pemasukan Bulanan',
-              petunjuk: 'Contoh: 1500000',
-              ikon: Icons.attach_money,
-              jenisInput: TextInputType.number,
-              controller: provider.controllerPemasukan,
-              validator: provider.validasiPemasukan,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Format: ${PemformatMataUang.format(1500000)} per bulan',
-              style: tema.textTheme.bodySmall?.copyWith(
-                color: tema.colorScheme.onSurfaceVariant,
+              const SizedBox(height: 8),
+              Text(
+                'Masukkan pemasukan bulananmu dan atur batas per kategori.',
+                style: tema.textTheme.bodyMedium?.copyWith(
+                  color: tema.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Batas Pengeluaran per Kategori',
-              style: tema.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 28),
+              BidangTeks(
+                label: 'Total Pemasukan Bulanan',
+                petunjuk: 'Contoh: 1500000',
+                ikon: Icons.attach_money,
+                jenisInput: TextInputType.number,
+                controller: provider.controllerPemasukan,
+                validator: provider.validasiPemasukan,
               ),
-            ),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  children: daftar.map((kategori) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor:
-                                Color(kategori.nilaiWarna).withOpacity(0.15),
-                            child: Icon(
-                              PemetaIkon.dariNama(kategori.namaIkon),
-                              color: Color(kategori.nilaiWarna),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              controller: provider.controllerBatas[kategori.id],
-                              keyboardType: TextInputType.number,
-                              validator: provider.validasiBatas,
-                              decoration: InputDecoration(
-                                labelText: 'Batas ${kategori.nama}',
-                                prefixText: 'Rp ',
-                                border: const OutlineInputBorder(),
+              const SizedBox(height: 8),
+              Text(
+                'Format: ${PemformatMataUang.format(1500000)} per bulan',
+                style: tema.textTheme.bodySmall?.copyWith(
+                  color: tema.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Batas Pengeluaran per Kategori',
+                style: tema.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    children: daftar.map((kategori) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor:
+                                  Color(kategori.nilaiWarna).withOpacity(0.15),
+                              child: Icon(
+                                PemetaIkon.dariNama(kategori.namaIkon),
+                                color: Color(kategori.nilaiWarna),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextFormField(
+                                controller:
+                                    provider.controllerBatas[kategori.id],
+                                keyboardType: TextInputType.number,
+                                validator: provider.validasiBatas,
+                                decoration: InputDecoration(
+                                  labelText: 'Batas ${kategori.nama}',
+                                  prefixText: 'Rp ',
+                                  border: const OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              provider.ringkasanBatas,
-              style: tema.textTheme.bodySmall?.copyWith(
-                color: tema.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            if (provider.errorTotalBatas != null) ...[
               const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: tema.colorScheme.errorContainer,
-                  borderRadius: BorderRadius.circular(8),
+              Text(
+                provider.ringkasanBatas,
+                style: tema.textTheme.bodySmall?.copyWith(
+                  color: tema.colorScheme.onSurfaceVariant,
                 ),
-                child: Row(
-                  children: [
-                    Icon(Icons.error_outline,
-                        color: tema.colorScheme.onErrorContainer),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        provider.errorTotalBatas!,
-                        style: TextStyle(
-                          color: tema.colorScheme.onErrorContainer,
+              ),
+              if (provider.errorTotalBatas != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: tema.colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline,
+                          color: tema.colorScheme.onErrorContainer),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          provider.errorTotalBatas!,
+                          style: TextStyle(
+                            color: tema.colorScheme.onErrorContainer,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              Card(
+                child: SwitchListTile(
+                  title: const Text('Izinkan Notifikasi'),
+                  subtitle: const Text(
+                    'Dapatkan peringatan saat kategori mendekati batas '
+                    'dan pengingat harian pukul 21:00.',
+                  ),
+                  value: provider.izinNotifikasi,
+                  onChanged: (nilai) => provider.izinNotifikasi = nilai,
                 ),
               ),
+              const SizedBox(height: 24),
+              TombolUtama(
+                label: 'Mulai Kelola Uang',
+                ikon: Icons.arrow_forward,
+                sedangMemuat: sedangMenyimpan,
+                saatDitekan: sedangMenyimpan ? null : () => _mulai(provider),
+              ),
+              const SizedBox(height: 24),
             ],
-            const SizedBox(height: 16),
-            Card(
-              child: SwitchListTile(
-                title: const Text('Izinkan Notifikasi'),
-                subtitle: const Text(
-                  'Dapatkan peringatan saat kategori mendekati batas '
-                  'dan pengingat harian pukul 21:00.',
-                ),
-                value: provider.izinNotifikasi,
-                onChanged: (nilai) => provider.izinNotifikasi = nilai,
-              ),
-            ),
-            const SizedBox(height: 24),
-            TombolUtama(
-              label: 'Mulai Kelola Uang',
-              ikon: Icons.arrow_forward,
-              sedangMemuat: sedangMenyimpan,
-              saatDitekan: sedangMenyimpan ? null : () => _mulai(provider),
-            ),
-            const SizedBox(height: 24),
-          ],
+          ),
         ),
       ),
     );

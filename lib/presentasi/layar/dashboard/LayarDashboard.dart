@@ -9,6 +9,8 @@ import '../../../inti/routing/RuteAplikasi.dart';
 import '../../../inti/utils/PemetaIkon.dart';
 import '../../../inti/utils/PemformatMataUang.dart';
 import '../../../inti/utils/PemformatTanggal.dart';
+import '../../../inti/utils/TataLetak.dart';
+import '../../../inti/utils/UmpanBalik.dart';
 import '../../widget/KartuSaldo.dart';
 import '../../widget/StateKosong.dart';
 
@@ -57,11 +59,16 @@ class _KeadaanLayarDashboard extends State<LayarDashboard> {
   }
 
   void _bukaRiwayat(BuildContext context) {
-    Navigator.pushNamed(context, RuteAplikasi.riwayatTransaksi).then((_) => _muatData());
+    Navigator.pushNamed(context, RuteAplikasi.riwayatTransaksi).then((_) {
+      if (mounted) _muatData();
+    });
   }
 
-  void _tambahTransaksi(BuildContext context) {
-    Navigator.pushNamed(context, RuteAplikasi.tambahTransaksi).then((_) => _muatData());
+  Future<void> _tambahTransaksi() async {
+    final navigator = Navigator.of(context);
+    final pesan = await navigator.pushNamed(RuteAplikasi.tambahTransaksi);
+    await _muatData();
+    if (pesan is String && mounted) UmpanBalik.sukses(context, pesan);
   }
 
   String _namaKategori(int idKategori) {
@@ -72,6 +79,37 @@ class _KeadaanLayarDashboard extends State<LayarDashboard> {
   Kategori? _cariKategori(int idKategori) {
     final k = _kategori.where((k) => k.id == idKategori);
     return k.isNotEmpty ? k.first : null;
+  }
+
+  Widget _itemTransaksi(Transaksi t, ThemeData tema) {
+    final kat = _cariKategori(t.idKategori);
+    final adalahPemasukan = t.jenisTransaksi == JenisTransaksi.pemasukan;
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: kat != null
+            ? Color(kat.nilaiWarna).withOpacity(0.15)
+            : Colors.grey.withOpacity(0.15),
+        child: Icon(
+          kat != null ? PemetaIkon.dariNama(kat.namaIkon) : Icons.category,
+          color: kat != null ? Color(kat.nilaiWarna) : Colors.grey,
+        ),
+      ),
+      title: Text(_namaKategori(t.idKategori)),
+      subtitle: Text(
+        t.catatan.isNotEmpty
+            ? '${PemformatTanggal.formatPendek(t.tanggalTransaksi)} - ${t.catatan}'
+            : PemformatTanggal.formatPendek(t.tanggalTransaksi),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: Text(
+        '${adalahPemasukan ? '+' : '-'} ${PemformatMataUang.format(t.jumlah)}',
+        style: tema.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: adalahPemasukan ? Colors.green : Colors.red,
+        ),
+      ),
+    );
   }
 
   @override
@@ -111,93 +149,109 @@ class _KeadaanLayarDashboard extends State<LayarDashboard> {
         ],
       ),
       body: _sedangMemuat
-          ? const Center(child: CircularProgressIndicator())
+          ? const _PemuatanDashboard()
           : RefreshIndicator(
               onRefresh: _muatData,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  KartuSaldo(
-                    sisaSaldo: sisaSaldo,
-                    totalPemasukan: totalPemasukan,
-                    totalPengeluaran: totalPengeluaran,
-                    sisaHari: sisaHari,
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Transaksi Terbaru',
-                        style: tema.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (_transaksi.isNotEmpty)
-                        TextButton(
-                          onPressed: () => _bukaRiwayat(context),
-                          child: const Text('Lihat Semua'),
-                        ),
-                    ],
-                  ),
-                  if (terbaru.isEmpty)
-                    const Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: StateKosong(
-                          ikon: Icons.receipt_long,
-                          judul: 'Belum Ada Transaksi',
-                          pesan: 'Tekan tombol + untuk menambah transaksi pertamamu.',
-                        ),
-                      ),
-                    )
-                  else
-                    Card(
-                      child: Column(
-                        children: terbaru.map((t) {
-                          final kat = _cariKategori(t.idKategori);
-                          final adalahPemasukan =
-                              t.jenisTransaksi == JenisTransaksi.pemasukan;
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: kat != null
-                                  ? Color(kat.nilaiWarna).withOpacity(0.15)
-                                  : Colors.grey.withOpacity(0.15),
-                              child: Icon(
-                                kat != null
-                                    ? PemetaIkon.dariNama(kat.namaIkon)
-                                    : Icons.category,
-                                color: kat != null
-                                    ? Color(kat.nilaiWarna)
-                                    : Colors.grey,
-                              ),
-                            ),
-                            title: Text(_namaKategori(t.idKategori)),
-                            subtitle: Text(
-                              t.catatan.isNotEmpty
-                                  ? '${PemformatTanggal.formatPendek(t.tanggalTransaksi)} - ${t.catatan}'
-                                  : PemformatTanggal.formatPendek(t.tanggalTransaksi),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            trailing: Text(
-                              '${adalahPemasukan ? '+' : '-'} ${PemformatMataUang.format(t.jumlah)}',
-                              style: tema.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: adalahPemasukan ? Colors.green : Colors.red,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
+              child: TataLetak.pusatkan(
+                context,
+                ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    KartuSaldo(
+                      sisaSaldo: sisaSaldo,
+                      totalPemasukan: totalPemasukan,
+                      totalPengeluaran: totalPengeluaran,
+                      sisaHari: sisaHari,
                     ),
-                ],
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Transaksi Terbaru',
+                          style: tema.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (_transaksi.isNotEmpty)
+                          TextButton.icon(
+                            onPressed: () => _bukaRiwayat(context),
+                            icon: const Icon(Icons.list_alt),
+                            label: const Text('Lihat Semua'),
+                          ),
+                      ],
+                    ),
+                    if (terbaru.isEmpty)
+                      const Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: StateKosong(
+                            ikon: Icons.receipt_long,
+                            judul: 'Belum Ada Transaksi',
+                            pesan:
+                                'Tekan tombol + untuk menambah transaksi pertamamu.',
+                          ),
+                        ),
+                      )
+                    else if (TataLetak.lebar(context))
+                      Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: terbaru
+                            .map((t) => SizedBox(
+                                  width:
+                                      (TataLetak.lebarKonten(context) - 48) / 2,
+                                  child: Card(
+                                    child: _itemTransaksi(t, tema),
+                                  ),
+                                ))
+                            .toList(),
+                      )
+                    else
+                      Card(
+                        child: Column(
+                          children: terbaru
+                              .map((t) => _itemTransaksi(t, tema))
+                              .toList(),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
       floatingActionButton: FloatingActionButton.extended(
         icon: const Icon(Icons.add),
         label: const Text('Tambah Transaksi'),
-        onPressed: () => _tambahTransaksi(context),
+        tooltip: 'Tambah transaksi baru',
+        onPressed: _tambahTransaksi,
+      ),
+    );
+  }
+}
+
+class _PemuatanDashboard extends StatelessWidget {
+  const _PemuatanDashboard();
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    return Center(
+      child: Semantics(
+        liveRegion: true,
+        label: 'Memuat data transaksi',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              'Memuat data transaksi...',
+              style: tema.textTheme.bodyLarge?.copyWith(
+                color: tema.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

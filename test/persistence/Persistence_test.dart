@@ -42,10 +42,13 @@ void main() {
       // Read
       kategoriList = await repoKategori.ambilSemua();
       expect(kategoriList.length, equals(4));
-      expect(kategoriList.map((k) => k.nama), containsAll(['Makan', 'Kos', 'Transport', 'Lain-lain']));
+      expect(kategoriList.map((k) => k.nama),
+          containsAll(['Makan', 'Kos', 'Transport', 'Lain-lain']));
     });
 
-    test('2. [CREATE & READ Transaksi] Simpan Transaksi Pemasukan dan Pengeluaran', () async {
+    test(
+        '2. [CREATE & READ Transaksi] Simpan Transaksi Pemasukan dan Pengeluaran',
+        () async {
       await repoKategori.buatDefault();
       final kategoriList = await repoKategori.ambilSemua();
       final idMakan = kategoriList.firstWhere((k) => k.nama == 'Makan').id;
@@ -74,7 +77,8 @@ void main() {
       expect(listTransaksi.first.jumlah, equals(25000));
     });
 
-    test('3. [UPDATE Transaksi] Memperbarui Nominal & Catatan Transaksi', () async {
+    test('3. [UPDATE Transaksi] Memperbarui Nominal & Catatan Transaksi',
+        () async {
       await repoKategori.buatDefault();
       final kategoriList = await repoKategori.ambilSemua();
       final idMakan = kategoriList.firstWhere((k) => k.nama == 'Makan').id;
@@ -126,11 +130,14 @@ void main() {
       expect(listTransaksi, isEmpty);
     });
 
-    test('5. [PERSISTENCE TEST] Data tetap ada setelah aplikasi/koneksi ditutup dan dibuka kembali', () async {
+    test(
+        '5. [PERSISTENCE TEST] Data tetap ada setelah aplikasi/koneksi ditutup dan dibuka kembali',
+        () async {
       // Step A: Buka db dan tulis data
       await repoKategori.buatDefault();
       final kategoriList = await repoKategori.ambilSemua();
-      final idTransport = kategoriList.firstWhere((k) => k.nama == 'Transport').id;
+      final idTransport =
+          kategoriList.firstWhere((k) => k.nama == 'Transport').id;
 
       await repoTransaksi.buat(
         idKategori: idTransport,
@@ -158,4 +165,3 @@ void main() {
     });
   });
 }
-

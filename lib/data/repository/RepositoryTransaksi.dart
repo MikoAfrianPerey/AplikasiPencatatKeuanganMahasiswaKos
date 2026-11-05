@@ -16,7 +16,8 @@ abstract class RepositoryTransaksi {
 
   Future<void> hapus(int id);
 
-  Future<void> perbarui(int id, {
+  Future<void> perbarui(
+    int id, {
     int? idKategori,
     int? jumlah,
     JenisTransaksi? jenis,
@@ -82,7 +83,8 @@ class RepositoryTransaksiMock implements RepositoryTransaksi {
   }
 
   @override
-  Future<void> perbarui(int id, {
+  Future<void> perbarui(
+    int id, {
     int? idKategori,
     int? jumlah,
     JenisTransaksi? jenis,

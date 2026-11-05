@@ -75,15 +75,16 @@ class ProviderAuth extends ChangeNotifier {
     try {
       final pengguna = _modeDaftar
           ? await _layanan.daftar(nama: nama, email: email, sandi: sandi).then(
-              (_) => _layanan.penggunaAktif(),
-            )
+                (_) => _layanan.penggunaAktif(),
+              )
           : await _layanan.masuk(email: email, sandi: sandi);
       _sudahDaftar = true;
       _status = pengguna == null
           ? const StatusData.error('Gagal menyimpan sesi')
           : StatusData.sukses(pengguna);
     } on Exception catch (error) {
-      _status = StatusData.error(error.toString().replaceFirst('Exception: ', ''));
+      _status =
+          StatusData.error(error.toString().replaceFirst('Exception: ', ''));
     }
     notifyListeners();
   }

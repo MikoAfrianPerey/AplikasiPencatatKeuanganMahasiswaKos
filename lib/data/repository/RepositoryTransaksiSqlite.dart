@@ -53,8 +53,10 @@ class RepositoryTransaksiSqlite implements RepositoryTransaksi {
         'bulan_periode': sekarang.month,
         'tahun_periode': sekarang.year,
         'total_pemasukan': 0,
-        'tanggal_mulai': DateTime(sekarang.year, sekarang.month, 1).toIso8601String(),
-        'tanggal_akhir': DateTime(sekarang.year, sekarang.month + 1, 0).toIso8601String(),
+        'tanggal_mulai':
+            DateTime(sekarang.year, sekarang.month, 1).toIso8601String(),
+        'tanggal_akhir':
+            DateTime(sekarang.year, sekarang.month + 1, 0).toIso8601String(),
         'aktif_sekarang': 1,
         'dibuat_pada': sekarang.toIso8601String(),
       });

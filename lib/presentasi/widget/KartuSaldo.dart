@@ -22,9 +22,8 @@ class KartuSaldo extends StatelessWidget {
     final tema = Theme.of(context);
     final warna = tema.colorScheme;
 
-    double persenTerpakai = totalPemasukan == 0
-        ? 0
-        : (totalPengeluaran / totalPemasukan) * 100;
+    double persenTerpakai =
+        totalPemasukan == 0 ? 0 : (totalPengeluaran / totalPemasukan) * 100;
 
     return Card(
       elevation: 4,
@@ -53,11 +52,15 @@ class KartuSaldo extends StatelessWidget {
             const SizedBox(height: 16),
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: (persenTerpakai / 100).clamp(0.0, 1.0),
-                minHeight: 10,
-                backgroundColor: warna.surfaceContainerHighest,
-                color: WarnaBatas.berdasarkanPersen(persenTerpakai),
+              child: Semantics(
+                label:
+                    'Pemakaian anggaran ${persenTerpakai.toStringAsFixed(0)} persen',
+                child: LinearProgressIndicator(
+                  value: (persenTerpakai / 100).clamp(0.0, 1.0),
+                  minHeight: 10,
+                  backgroundColor: warna.surfaceContainerHighest,
+                  color: WarnaBatas.berdasarkanPersen(persenTerpakai),
+                ),
               ),
             ),
             const SizedBox(height: 16),

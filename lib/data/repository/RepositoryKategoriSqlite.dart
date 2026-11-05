@@ -12,7 +12,8 @@ class RepositoryKategoriSqlite implements RepositoryKategori {
   @override
   Future<List<Kategori>> ambilSemua() async {
     if (_modeError) {
-      throw Exception('Gagal memuat kategori. Periksa penyimpanan dan coba lagi.');
+      throw Exception(
+          'Gagal memuat kategori. Periksa penyimpanan dan coba lagi.');
     }
     final hasil = await _db.kueri('kategori', orderBy: 'id ASC');
     return hasil.map((m) => Kategori.dariMap(m)).toList();
