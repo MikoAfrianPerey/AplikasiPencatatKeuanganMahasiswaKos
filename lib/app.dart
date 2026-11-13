@@ -6,6 +6,8 @@ import 'data/repository/RepositoryKategori.dart';
 import 'data/repository/RepositoryKategoriSqlite.dart';
 import 'data/repository/RepositoryPeriodeBudget.dart';
 import 'data/repository/RepositoryPeriodeBudgetSqlite.dart';
+import 'data/repository/RepositoryProfil.dart';
+import 'data/repository/RepositoryProfilLokal.dart';
 import 'data/repository/RepositoryTransaksi.dart';
 import 'data/repository/RepositoryTransaksiApi.dart';
 import 'inti/routing/RuteAplikasi.dart';
@@ -15,6 +17,7 @@ import 'layanan/LayananNotifikasi.dart';
 import 'provider/ProviderAuth.dart';
 import 'provider/ProviderOnboarding.dart';
 import 'provider/ProviderPengaturan.dart';
+import 'provider/ProviderProfil.dart';
 import 'provider/ProviderTransaksi.dart';
 
 class AplikasiDompetKos extends StatelessWidget {
@@ -27,6 +30,7 @@ class AplikasiDompetKos extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<LayananAuth>(create: (_) => LayananAuth()),
+        Provider<RepositoryProfil>(create: (_) => RepositoryProfilLokal()),
         Provider<LayananNotifikasi>(
           create: (_) => LayananNotifikasi(),
           lazy: false,
@@ -71,6 +75,9 @@ class AplikasiDompetKos extends StatelessWidget {
             context.read<RepositoryKategori>(),
             context.read<LayananNotifikasi>(),
           ),
+        ),
+        ChangeNotifierProvider<ProviderProfil>(
+          create: (context) => ProviderProfil(context.read<RepositoryProfil>()),
         ),
       ],
       child: MaterialApp(

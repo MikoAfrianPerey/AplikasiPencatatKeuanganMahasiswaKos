@@ -1,7 +1,6 @@
-import 'dart:convert';
-
-import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../data/repository/RepositoryProfil.dart';
 
 class Pengguna {
   final String nama;
@@ -11,10 +10,10 @@ class Pengguna {
 }
 
 class LayananAuth {
-  static const _kunciNama = 'auth_nama';
-  static const _kunciEmail = 'auth_email';
-  static const _kunciSandi = 'auth_sandi';
-  static const _kunciMasuk = 'auth_masuk';
+  static const _kunciNama = PenyimpananProfilLokal.kunciNama;
+  static const _kunciEmail = PenyimpananProfilLokal.kunciEmail;
+  static const _kunciSandi = PenyimpananProfilLokal.kunciSandi;
+  static const _kunciMasuk = PenyimpananProfilLokal.kunciMasuk;
 
   Future<bool> sudahPernahDaftar() async {
     final prefs = await SharedPreferences.getInstance();
@@ -38,7 +37,7 @@ class LayananAuth {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kunciNama, nama.trim());
     await prefs.setString(_kunciEmail, email.trim().toLowerCase());
-    await prefs.setString(_kunciSandi, _hash(sandi));
+    await prefs.setString(_kunciSandi, PenyimpananProfilLokal.hash(sandi));
     await prefs.setBool(_kunciMasuk, true);
   }
 
@@ -54,7 +53,7 @@ class LayananAuth {
     if (emailTersimpan != email.trim().toLowerCase()) {
       throw Exception('Email atau sandi salah.');
     }
-    if (prefs.getString(_kunciSandi) != _hash(sandi)) {
+    if (prefs.getString(_kunciSandi) != PenyimpananProfilLokal.hash(sandi)) {
       throw Exception('Email atau sandi salah.');
     }
     await prefs.setBool(_kunciMasuk, true);
@@ -68,7 +67,4 @@ class LayananAuth {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kunciMasuk, false);
   }
-
-  String _hash(String sandi) =>
-      base64Encode(sha256.convert(utf8.encode(sandi)).bytes);
 }

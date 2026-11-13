@@ -160,6 +160,16 @@ class _KeadaanLayarPengaturan extends State<LayarPengaturan> {
                 ),
               ),
             ),
+            _bagianHeader('Profil', tema),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.manage_accounts),
+                title: const Text('Kelola Profil'),
+                subtitle: const Text('Ubah nama, email, dan sandi'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pushNamed(context, RuteAplikasi.profil),
+              ),
+            ),
             _bagianHeader('Batas Kategori', tema),
             Card(
               child: ListTile(

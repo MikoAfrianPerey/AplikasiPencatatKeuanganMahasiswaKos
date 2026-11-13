@@ -86,4 +86,9 @@ class ProviderAuth extends ChangeNotifier {
     _status = const StatusData.initial();
     notifyListeners();
   }
+
+  Future<void> perbaruiProfil(Pengguna pengguna) async {
+    _status = StatusData.sukses(pengguna);
+    notifyListeners();
+  }
 }

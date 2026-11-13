@@ -35,4 +35,18 @@ class ProfilValidasi {
       ProfilValidasi.nama(nama, modeDaftar: modeDaftar) ??
       ProfilValidasi.email(email) ??
       ProfilValidasi.sandi(sandi);
+
+  static String? sandiBaru({
+    required String? sandiLama,
+    required String? sandiBaru,
+    required String? konfirmasi,
+  }) {
+    final lama = sandiLama ?? '';
+    if (lama.isEmpty) return 'Sandi lama tidak boleh kosong';
+    final baru = ProfilValidasi.sandi(sandiBaru);
+    if (baru != null) return baru;
+    if (sandiBaru == lama) return 'Sandi baru harus berbeda dari sandi lama';
+    if (konfirmasi != sandiBaru) return 'Konfirmasi sandi tidak sama';
+    return null;
+  }
 }

@@ -7,6 +7,7 @@ import '../../presentasi/layar/dashboard/LayarDashboard.dart';
 import '../../presentasi/layar/laporan/LayarLaporan.dart';
 import '../../presentasi/layar/onboarding/LayarOnboarding.dart';
 import '../../presentasi/layar/pengaturan/LayarPengaturan.dart';
+import '../../presentasi/layar/profil/LayarProfil.dart';
 import '../../presentasi/layar/transaksi/LayarRiwayatTransaksi.dart';
 import '../../presentasi/layar/transaksi/LayarTambahTransaksi.dart';
 
@@ -20,6 +21,7 @@ class RuteAplikasi {
   static const String riwayatTransaksi = '/riwayat-transaksi';
   static const String laporan = '/laporan';
   static const String pengaturan = '/pengaturan';
+  static const String profil = '/profil';
 
   static Map<String, WidgetBuilder> get rute => {
         gerbang: (_) => const LayarGerbang(),
@@ -34,5 +36,6 @@ class RuteAplikasi {
         riwayatTransaksi: (_) => const LayarRiwayatTransaksi(),
         laporan: (_) => const LayarLaporan(),
         pengaturan: (_) => const LayarPengaturan(),
+        profil: (_) => const LayarProfil(),
       };
 }
