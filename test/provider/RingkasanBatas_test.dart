@@ -1,10 +1,8 @@
 import 'package:dompet_kos/data/model/BudgetKategori.dart';
 import 'package:dompet_kos/data/model/Kategori.dart';
 import 'package:dompet_kos/data/model/PeriodeBudget.dart';
-import 'package:dompet_kos/data/model/Transaksi.dart';
 import 'package:dompet_kos/data/repository/RepositoryKategori.dart';
 import 'package:dompet_kos/data/repository/RepositoryPeriodeBudget.dart';
-import 'package:dompet_kos/data/repository/RepositoryTransaksi.dart';
 import 'package:dompet_kos/provider/ProviderOnboarding.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -49,39 +47,6 @@ class _PeriodeUji implements RepositoryPeriodeBudget {
 
   @override
   Future<List<BudgetKategori>> ambilBatasPeriode(int idPeriode) async => [];
-}
-
-class _TransaksiKosong implements RepositoryTransaksi {
-  @override
-  Future<List<Transaksi>> ambilSemua() async => [];
-
-  @override
-  Future<Transaksi?> ambilBerdasarkanId(int id) async => null;
-
-  @override
-  Future<Transaksi> buat({
-    required int idKategori,
-    required int jumlah,
-    required JenisTransaksi jenis,
-    required DateTime tanggal,
-    String catatan = '',
-    String? lokasi,
-  }) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<void> hapus(int id) async {}
-
-  @override
-  Future<void> perbarui(
-    int id, {
-    int? idKategori,
-    int? jumlah,
-    JenisTransaksi? jenis,
-    DateTime? tanggal,
-    String? catatan,
-    String? lokasi,
-  }) async {}
 }
 
 void main() {

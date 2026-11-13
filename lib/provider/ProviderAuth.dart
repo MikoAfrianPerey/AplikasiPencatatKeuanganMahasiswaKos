@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../inti/state/StatusData.dart';
+import '../inti/validasi/ProfilValidasi.dart';
 import '../layanan/LayananAuth.dart';
 
 class ProviderAuth extends ChangeNotifier {
@@ -32,40 +33,26 @@ class ProviderAuth extends ChangeNotifier {
     notifyListeners();
   }
 
-  String? validasiNama(String? nilai) {
-    if (_modeDaftar && (nilai == null || nilai.trim().length < 3)) {
-      return 'Nama minimal 3 karakter';
-    }
-    return null;
-  }
+  String? validasiNama(String? nilai) =>
+      ProfilValidasi.nama(nilai, modeDaftar: _modeDaftar);
 
-  String? validasiEmail(String? nilai) {
-    final email = nilai?.trim() ?? '';
-    if (email.isEmpty) return 'Email tidak boleh kosong';
-    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
-      return 'Format email tidak valid';
-    }
-    return null;
-  }
+  String? validasiEmail(String? nilai) => ProfilValidasi.email(nilai);
 
-  String? validasiSandi(String? nilai) {
-    if (nilai == null || nilai.length < 6) {
-      return 'Sandi minimal 6 karakter';
-    }
-    return null;
-  }
+  String? validasiSandi(String? nilai) => ProfilValidasi.sandi(nilai);
 
   Future<void> kirim({
     required String nama,
     required String email,
     required String sandi,
   }) async {
-    if (validasiEmail(email) != null ||
-        validasiSandi(sandi) != null ||
-        validasiNama(nama) != null) {
-      _status = StatusData.error(
-        validasiNama(nama) ?? validasiEmail(email) ?? validasiSandi(sandi)!,
-      );
+    final error = ProfilValidasi.profil(
+      nama: nama,
+      email: email,
+      sandi: sandi,
+      modeDaftar: _modeDaftar,
+    );
+    if (error != null) {
+      _status = StatusData.error(error);
       notifyListeners();
       return;
     }
@@ -73,20 +60,25 @@ class ProviderAuth extends ChangeNotifier {
     _status = const StatusData.loading();
     notifyListeners();
     try {
-      final pengguna = _modeDaftar
-          ? await _layanan.daftar(nama: nama, email: email, sandi: sandi).then(
-                (_) => _layanan.penggunaAktif(),
-              )
-          : await _layanan.masuk(email: email, sandi: sandi);
+      final pengguna = await _daftarAtauMasuk(nama, email, sandi);
       _sudahDaftar = true;
       _status = pengguna == null
           ? const StatusData.error('Gagal menyimpan sesi')
           : StatusData.sukses(pengguna);
     } on Exception catch (error) {
-      _status =
-          StatusData.error(error.toString().replaceFirst('Exception: ', ''));
+      _status = StatusData.dariError(error);
     }
     notifyListeners();
+  }
+
+  Future<Pengguna?> _daftarAtauMasuk(
+    String nama,
+    String email,
+    String sandi,
+  ) async {
+    if (!_modeDaftar) return _layanan.masuk(email: email, sandi: sandi);
+    await _layanan.daftar(nama: nama, email: email, sandi: sandi);
+    return _layanan.penggunaAktif();
   }
 
   Future<void> keluar() async {

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
@@ -11,7 +11,10 @@ import '../../../inti/utils/PemformatTanggal.dart';
 import '../../../inti/utils/TataLetak.dart';
 import '../../../inti/utils/UmpanBalik.dart';
 import '../../../provider/ProviderTransaksi.dart';
+import '../../widget/KartuPeringatan.dart';
+import '../../widget/KeypadAngka.dart';
 import '../../widget/StateKosong.dart';
+import '../../widget/TampilanStatus.dart';
 import '../../widget/TombolUtama.dart';
 
 class LayarTambahTransaksi extends StatefulWidget {
@@ -130,22 +133,7 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
   }
 
   Widget _bangunLoading(BuildContext context) {
-    final tema = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 16),
-          Text(
-            'Memuat kategori...',
-            style: tema.textTheme.bodyLarge?.copyWith(
-              color: tema.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
+    return const IndikatorMemuat(pesan: 'Memuat kategori...');
   }
 
   Widget _bangunKosong(ProviderTransaksi provider) {
@@ -242,31 +230,7 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
                   ),
                   if (provider.errorForm != null) ...[
                     const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: tema.colorScheme.errorContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline,
-                                color: tema.colorScheme.onErrorContainer),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                provider.errorForm!,
-                                style: TextStyle(
-                                  color: tema.colorScheme.onErrorContainer,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    KartuPeringatan(pesan: provider.errorForm!),
                   ],
                   const SizedBox(height: 16),
                   SizedBox(
@@ -354,62 +318,12 @@ class _KeadaanLayarTambahTransaksi extends State<LayarTambahTransaksi> {
             ),
           ),
         ),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: TataLetak.lebar(context) ? 6 : 4,
-            childAspectRatio: 1.6,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-          ),
-          itemCount: 12,
-          itemBuilder: (context, index) {
-            final tombol = _tombolKeypad(index);
-            final adalahHapus = tombol == '⌫';
-            return FilledButton(
-              onPressed: sedangMenyimpan
-                  ? null
-                  : adalahHapus
-                      ? () => provider.hapus()
-                      : () => provider.ketik(tombol),
-              style: FilledButton.styleFrom(
-                backgroundColor: adalahHapus
-                    ? tema.colorScheme.errorContainer
-                    : tema.colorScheme.surfaceContainerHighest,
-                foregroundColor: adalahHapus
-                    ? tema.colorScheme.onErrorContainer
-                    : tema.colorScheme.onSurface,
-              ),
-              child: Text(
-                tombol,
-                style: tema.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            );
-          },
+        KeypadAngka(
+          nonaktif: sedangMenyimpan,
+          saatKetik: provider.ketik,
+          saatHapus: provider.hapus,
         ),
       ],
     );
-  }
-
-  String _tombolKeypad(int index) {
-    const tombol = [
-      '7',
-      '8',
-      '9',
-      '⌫',
-      '4',
-      '5',
-      '6',
-      '000',
-      '1',
-      '2',
-      '3',
-      '0'
-    ];
-    return tombol[index];
   }
 }

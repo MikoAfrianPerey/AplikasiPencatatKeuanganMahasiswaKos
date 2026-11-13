@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../data/model/Kategori.dart';
 import '../../../data/model/Transaksi.dart';
 import '../../../data/repository/RepositoryKategori.dart';
 import '../../../data/repository/RepositoryTransaksi.dart';
 import '../../../inti/routing/RuteAplikasi.dart';
+import '../../../inti/utils/DataBeranda.dart';
 import '../../../inti/utils/PemetaIkon.dart';
 import '../../../inti/utils/PemformatMataUang.dart';
 import '../../../inti/utils/PemformatTanggal.dart';
@@ -13,6 +13,7 @@ import '../../../inti/utils/TataLetak.dart';
 import '../../../inti/utils/UmpanBalik.dart';
 import '../../widget/KartuSaldo.dart';
 import '../../widget/StateKosong.dart';
+import '../../widget/TampilanStatus.dart';
 
 class LayarDashboard extends StatefulWidget {
   const LayarDashboard({super.key});
@@ -22,8 +23,7 @@ class LayarDashboard extends StatefulWidget {
 }
 
 class _KeadaanLayarDashboard extends State<LayarDashboard> {
-  List<Transaksi> _transaksi = [];
-  List<Kategori> _kategori = [];
+  DataBeranda _data = const DataBeranda(transaksi: [], kategori: []);
   bool _sedangMemuat = true;
 
   @override
@@ -36,12 +36,13 @@ class _KeadaanLayarDashboard extends State<LayarDashboard> {
     final repoTransaksi = context.read<RepositoryTransaksi>();
     final repoKategori = context.read<RepositoryKategori>();
     try {
-      final transaksi = await repoTransaksi.ambilSemua();
-      final kategori = await repoKategori.ambilSemua();
+      final data = await DataBeranda.muat(
+        transaksi: repoTransaksi,
+        kategori: repoKategori,
+      );
       if (mounted) {
         setState(() {
-          _transaksi = transaksi;
-          _kategori = kategori;
+          _data = data;
           _sedangMemuat = false;
         });
       }
@@ -71,18 +72,8 @@ class _KeadaanLayarDashboard extends State<LayarDashboard> {
     if (pesan is String && mounted) UmpanBalik.sukses(context, pesan);
   }
 
-  String _namaKategori(int idKategori) {
-    final k = _kategori.where((k) => k.id == idKategori);
-    return k.isNotEmpty ? k.first.nama : 'Lain-lain';
-  }
-
-  Kategori? _cariKategori(int idKategori) {
-    final k = _kategori.where((k) => k.id == idKategori);
-    return k.isNotEmpty ? k.first : null;
-  }
-
   Widget _itemTransaksi(Transaksi t, ThemeData tema) {
-    final kat = _cariKategori(t.idKategori);
+    final kat = _data.cariKategori(t.idKategori);
     final adalahPemasukan = t.jenisTransaksi == JenisTransaksi.pemasukan;
     return ListTile(
       leading: CircleAvatar(
@@ -94,7 +85,7 @@ class _KeadaanLayarDashboard extends State<LayarDashboard> {
           color: kat != null ? Color(kat.nilaiWarna) : Colors.grey,
         ),
       ),
-      title: Text(_namaKategori(t.idKategori)),
+      title: Text(_data.namaKategori(t.idKategori)),
       subtitle: Text(
         t.catatan.isNotEmpty
             ? '${PemformatTanggal.formatPendek(t.tanggalTransaksi)} - ${t.catatan}'
@@ -116,20 +107,15 @@ class _KeadaanLayarDashboard extends State<LayarDashboard> {
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
 
-    final totalPemasukan = _transaksi
-        .where((t) => t.jenisTransaksi == JenisTransaksi.pemasukan)
-        .fold(0, (sum, t) => sum + t.jumlah);
-    final totalPengeluaran = _transaksi
-        .where((t) => t.jenisTransaksi == JenisTransaksi.pengeluaran)
-        .fold(0, (sum, t) => sum + t.jumlah);
+    final totalPemasukan = _data.totalPemasukan();
+    final totalPengeluaran = _data.totalPengeluaran();
     final sisaSaldo = totalPemasukan - totalPengeluaran;
 
     final sekarang = DateTime.now();
     final akhirBulan = DateTime(sekarang.year, sekarang.month + 1, 0);
     final sisaHari = akhirBulan.difference(sekarang).inDays;
 
-    // Ambil 5 transaksi terbaru
-    final terbaru = _transaksi.take(5).toList();
+    final terbaru = _data.terbaru(5);
 
     return Scaffold(
       appBar: AppBar(
@@ -149,7 +135,7 @@ class _KeadaanLayarDashboard extends State<LayarDashboard> {
         ],
       ),
       body: _sedangMemuat
-          ? const _PemuatanDashboard()
+          ? const IndikatorMemuat(pesan: 'Memuat data transaksi...')
           : RefreshIndicator(
               onRefresh: _muatData,
               child: TataLetak.pusatkan(
@@ -173,7 +159,7 @@ class _KeadaanLayarDashboard extends State<LayarDashboard> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (_transaksi.isNotEmpty)
+                        if (_data.transaksi.isNotEmpty)
                           TextButton.icon(
                             onPressed: () => _bukaRiwayat(context),
                             icon: const Icon(Icons.list_alt),
@@ -224,34 +210,6 @@ class _KeadaanLayarDashboard extends State<LayarDashboard> {
         label: const Text('Tambah Transaksi'),
         tooltip: 'Tambah transaksi baru',
         onPressed: _tambahTransaksi,
-      ),
-    );
-  }
-}
-
-class _PemuatanDashboard extends StatelessWidget {
-  const _PemuatanDashboard();
-
-  @override
-  Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-    return Center(
-      child: Semantics(
-        liveRegion: true,
-        label: 'Memuat data transaksi',
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(
-              'Memuat data transaksi...',
-              style: tema.textTheme.bodyLarge?.copyWith(
-                color: tema.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

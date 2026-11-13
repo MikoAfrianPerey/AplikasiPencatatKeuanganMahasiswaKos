@@ -6,6 +6,7 @@ import '../data/repository/RepositoryKategori.dart';
 import '../data/repository/RepositoryPeriodeBudget.dart';
 import '../data/repository/RepositoryTransaksi.dart';
 import '../inti/state/StatusData.dart';
+import '../inti/validasi/ValidasiAngka.dart';
 import '../layanan/LayananNotifikasi.dart';
 
 class ProviderTransaksi extends ChangeNotifier {
@@ -66,7 +67,7 @@ class ProviderTransaksi extends ChangeNotifier {
         _kategoriTerpilih ??= hasil.first;
       }
     } on Exception catch (e) {
-      _statusKategori = StatusData.error(e.toString());
+      _statusKategori = StatusData.dariError(e);
     }
     notifyListeners();
   }
@@ -140,67 +141,70 @@ class ProviderTransaksi extends ChangeNotifier {
     notifyListeners();
   }
 
-  String? validasiJumlah() {
-    final jumlah = int.tryParse(_jumlah);
-    if (jumlah == null || jumlah <= 0) {
-      return 'Jumlah transaksi harus lebih dari 0';
-    }
-    return null;
-  }
+  String? validasiJumlah() => ValidasiAngka.jumlahPositif(
+        _jumlah,
+        'Jumlah transaksi harus lebih dari 0',
+      );
+
+  JenisTransaksi get _jenisTerpilih =>
+      _adalahPemasukan ? JenisTransaksi.pemasukan : JenisTransaksi.pengeluaran;
+
+  String? _validasiForm() =>
+      validasiJumlah() ??
+      (_kategoriTerpilih == null
+          ? 'Pilih kategori transaksi terlebih dahulu'
+          : null);
 
   Future<void> simpanTransaksi() async {
-    final errorJumlah = validasiJumlah();
-    if (errorJumlah != null) {
-      _errorForm = errorJumlah;
+    final error = _validasiForm();
+    _errorForm = error;
+    if (error != null) {
       notifyListeners();
       return;
     }
-    if (_kategoriTerpilih == null) {
-      _errorForm = 'Pilih kategori transaksi terlebih dahulu';
-      notifyListeners();
-      return;
-    }
-    _errorForm = null;
 
     _statusSimpan = const StatusData.loading();
     notifyListeners();
 
     try {
-      final Transaksi transaksi;
-      if (_idTransaksiDiedit != null) {
-        await _repositoryTransaksi.perbarui(
-          _idTransaksiDiedit!,
-          idKategori: _kategoriTerpilih!.id,
-          jumlah: int.parse(_jumlah),
-          jenis: _adalahPemasukan
-              ? JenisTransaksi.pemasukan
-              : JenisTransaksi.pengeluaran,
-          tanggal: _tanggal,
-          catatan: controllerCatatan.text.trim(),
-          lokasi: _lokasi,
-        );
-        final tersimpan =
-            await _repositoryTransaksi.ambilBerdasarkanId(_idTransaksiDiedit!);
-        transaksi = tersimpan ??
-            (throw Exception('Transaksi tidak ditemukan saat diperbarui'));
-      } else {
-        transaksi = await _repositoryTransaksi.buat(
-          idKategori: _kategoriTerpilih!.id,
-          jumlah: int.parse(_jumlah),
-          jenis: _adalahPemasukan
-              ? JenisTransaksi.pemasukan
-              : JenisTransaksi.pengeluaran,
-          tanggal: _tanggal,
-          catatan: controllerCatatan.text.trim(),
-          lokasi: _lokasi,
-        );
-      }
+      final transaksi = await _tulisTransaksi();
       _statusSimpan = StatusData.sukses(transaksi);
       await _cekBatasKategori(transaksi);
     } on Exception catch (e) {
-      _statusSimpan = StatusData.error(e.toString());
+      _statusSimpan = StatusData.dariError(e);
     }
     notifyListeners();
+  }
+
+  Future<Transaksi> _tulisTransaksi() async {
+    final idKategori = _kategoriTerpilih!.id;
+    final jumlah = int.parse(_jumlah);
+    final catatan = controllerCatatan.text.trim();
+    final idEdit = _idTransaksiDiedit;
+
+    if (idEdit == null) {
+      return _repositoryTransaksi.buat(
+        idKategori: idKategori,
+        jumlah: jumlah,
+        jenis: _jenisTerpilih,
+        tanggal: _tanggal,
+        catatan: catatan,
+        lokasi: _lokasi,
+      );
+    }
+
+    await _repositoryTransaksi.perbarui(
+      idEdit,
+      idKategori: idKategori,
+      jumlah: jumlah,
+      jenis: _jenisTerpilih,
+      tanggal: _tanggal,
+      catatan: catatan,
+      lokasi: _lokasi,
+    );
+    final tersimpan = await _repositoryTransaksi.ambilBerdasarkanId(idEdit);
+    return tersimpan ??
+        (throw Exception('Transaksi tidak ditemukan saat diperbarui'));
   }
 
   Future<void> _cekBatasKategori(Transaksi transaksi) async {
@@ -209,18 +213,10 @@ class ProviderTransaksi extends ChangeNotifier {
     if (notifikasi == null || repositoryPeriode == null) return;
     if (transaksi.jenisTransaksi != JenisTransaksi.pengeluaran) return;
     try {
-      final periode = await repositoryPeriode.ambilPeriodeAktif();
-      if (periode == null) return;
-      final batas = await repositoryPeriode.ambilBatasPeriode(periode.id);
-      final cocok = batas.where((b) => b.idKategori == transaksi.idKategori);
-      if (cocok.isEmpty) return;
-      final semua = await _repositoryTransaksi.ambilSemua();
-      final terpakai = semua
-          .where((t) =>
-              t.idKategori == transaksi.idKategori &&
-              t.jenisTransaksi == JenisTransaksi.pengeluaran)
-          .fold(0, (total, t) => total + t.jumlah);
-      if (terpakai >= cocok.first.jumlahBatas) {
+      final batas = await _batasKategori(transaksi.idKategori);
+      if (batas == null) return;
+      final terpakai = await _totalTerpakai(transaksi.idKategori);
+      if (terpakai >= batas) {
         await notifikasi.kirimPeringatanBatas(
           _kategoriTerpilih?.nama ?? 'kategori ini',
         );
@@ -228,6 +224,25 @@ class ProviderTransaksi extends ChangeNotifier {
     } on Exception catch (_) {
       // Kegagalan notifikasi tidak boleh menggagalkan penyimpanan transaksi.
     }
+  }
+
+  Future<int?> _batasKategori(int idKategori) async {
+    final periode = await _repositoryPeriode!.ambilPeriodeAktif();
+    if (periode == null) return null;
+    final batas = await _repositoryPeriode!.ambilBatasPeriode(periode.id);
+    for (final item in batas) {
+      if (item.idKategori == idKategori) return item.jumlahBatas;
+    }
+    return null;
+  }
+
+  Future<int> _totalTerpakai(int idKategori) async {
+    final semua = await _repositoryTransaksi.ambilSemua();
+    return semua
+        .where((t) =>
+            t.idKategori == idKategori &&
+            t.jenisTransaksi == JenisTransaksi.pengeluaran)
+        .fold<int>(0, (total, t) => total + t.jumlah);
   }
 
   @override

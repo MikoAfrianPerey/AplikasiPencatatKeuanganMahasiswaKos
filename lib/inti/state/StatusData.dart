@@ -32,4 +32,10 @@ class StatusData<T> {
   bool get adalahSukses => status == Status.sukses;
   bool get adalahKosong => status == Status.kosong;
   bool get adalahError => status == Status.error;
+
+  static StatusData<Never> dariError(Exception error) =>
+      StatusData<Never>.error(pesanException(error));
 }
+
+String pesanException(Object error) =>
+    error.toString().replaceFirst('Exception: ', '');

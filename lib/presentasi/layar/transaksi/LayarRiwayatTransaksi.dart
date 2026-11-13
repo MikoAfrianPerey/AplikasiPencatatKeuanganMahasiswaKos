@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../data/model/Kategori.dart';
 import '../../../data/model/Transaksi.dart';
 import '../../../data/repository/RepositoryKategori.dart';
 import '../../../data/repository/RepositoryTransaksi.dart';
 import '../../../inti/routing/RuteAplikasi.dart';
+import '../../../inti/state/StatusData.dart';
+import '../../../inti/utils/DataBeranda.dart';
 import '../../../inti/utils/PemetaIkon.dart';
 import '../../../inti/utils/PemformatMataUang.dart';
 import '../../../inti/utils/PemformatTanggal.dart';
 import '../../../inti/utils/UmpanBalik.dart';
 import '../../widget/StateKosong.dart';
+import '../../widget/TampilanStatus.dart';
 
 class LayarRiwayatTransaksi extends StatefulWidget {
   const LayarRiwayatTransaksi({super.key});
@@ -20,8 +22,7 @@ class LayarRiwayatTransaksi extends StatefulWidget {
 }
 
 class _KeadaanLayarRiwayatTransaksi extends State<LayarRiwayatTransaksi> {
-  List<Transaksi> _semuaTransaksi = [];
-  List<Kategori> _kategori = [];
+  DataBeranda _data = const DataBeranda(transaksi: [], kategori: []);
   String _filterKategori = 'Semua';
   bool _sedangMemuat = true;
   String? _error;
@@ -42,12 +43,13 @@ class _KeadaanLayarRiwayatTransaksi extends State<LayarRiwayatTransaksi> {
     final repoTransaksi = context.read<RepositoryTransaksi>();
     final repoKategori = context.read<RepositoryKategori>();
     try {
-      final transaksi = await repoTransaksi.ambilSemua();
-      final kategori = await repoKategori.ambilSemua();
+      final data = await DataBeranda.muat(
+        transaksi: repoTransaksi,
+        kategori: repoKategori,
+      );
       if (mounted) {
         setState(() {
-          _semuaTransaksi = transaksi;
-          _kategori = kategori;
+          _data = data;
           _sedangMemuat = false;
           _error = null;
         });
@@ -56,7 +58,7 @@ class _KeadaanLayarRiwayatTransaksi extends State<LayarRiwayatTransaksi> {
       if (mounted) {
         setState(() {
           _sedangMemuat = false;
-          _error = error.toString();
+          _error = pesanException(error);
         });
       }
     }
@@ -64,26 +66,17 @@ class _KeadaanLayarRiwayatTransaksi extends State<LayarRiwayatTransaksi> {
 
   List<String> get _daftarFilter {
     final filters = ['Semua'];
-    for (final k in _kategori) {
+    for (final k in _data.kategori) {
       if (!filters.contains(k.nama)) filters.add(k.nama);
     }
     return filters;
   }
 
-  Kategori? _cariKategori(int idKategori) {
-    final k = _kategori.where((k) => k.id == idKategori);
-    return k.isNotEmpty ? k.first : null;
-  }
-
-  String _namaKategori(int idKategori) {
-    return _cariKategori(idKategori)?.nama ?? 'Lain-lain';
-  }
-
   List<Transaksi> get _transaksiDifilter {
-    if (_filterKategori == 'Semua') return _semuaTransaksi;
-    return _semuaTransaksi.where((t) {
-      return _namaKategori(t.idKategori) == _filterKategori;
-    }).toList();
+    if (_filterKategori == 'Semua') return _data.transaksi;
+    return _data.transaksi
+        .where((t) => _data.namaKategori(t.idKategori) == _filterKategori)
+        .toList();
   }
 
   Map<String, List<Transaksi>> get _transaksiDikelompokkan {
@@ -96,23 +89,35 @@ class _KeadaanLayarRiwayatTransaksi extends State<LayarRiwayatTransaksi> {
   }
 
   Future<void> _editTransaksi(Transaksi transaksi) async {
-    final pesan = await Navigator.pushNamed(
-      context,
+    final navigator = Navigator.of(context);
+    final pesan = await navigator.pushNamed(
       RuteAplikasi.editTransaksi,
       arguments: transaksi,
     );
-    if (!mounted) return;
     await _muatData();
     if (pesan is String && mounted) UmpanBalik.sukses(context, pesan);
   }
 
   Future<void> _hapusTransaksi(Transaksi transaksi) async {
-    final konfirmasi = await showDialog<bool>(
+    final konfirmasi = await _konfirmasiHapus(transaksi);
+    if (konfirmasi != true || !mounted) return;
+    final repoTransaksi = context.read<RepositoryTransaksi>();
+    try {
+      await repoTransaksi.hapus(transaksi.id);
+      await _muatData();
+      if (mounted) UmpanBalik.sukses(context, 'Transaksi berhasil dihapus');
+    } on Exception catch (error) {
+      if (mounted) UmpanBalik.galat(context, 'Gagal menghapus: $error');
+    }
+  }
+
+  Future<bool?> _konfirmasiHapus(Transaksi transaksi) {
+    return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Hapus Transaksi?'),
         content: Text(
-          'Transaksi ${_namaKategori(transaksi.idKategori)} '
+          'Transaksi ${_data.namaKategori(transaksi.idKategori)} '
           'sebesar ${PemformatMataUang.format(transaksi.jumlah)} akan dihapus.',
         ),
         actions: [
@@ -127,16 +132,6 @@ class _KeadaanLayarRiwayatTransaksi extends State<LayarRiwayatTransaksi> {
         ],
       ),
     );
-
-    if (konfirmasi == true && mounted) {
-      try {
-        await context.read<RepositoryTransaksi>().hapus(transaksi.id);
-        await _muatData();
-        if (mounted) UmpanBalik.sukses(context, 'Transaksi berhasil dihapus');
-      } on Exception catch (error) {
-        if (mounted) UmpanBalik.galat(context, 'Gagal menghapus: $error');
-      }
-    }
   }
 
   @override
@@ -159,179 +154,128 @@ class _KeadaanLayarRiwayatTransaksi extends State<LayarRiwayatTransaksi> {
           ),
         ),
       ),
-      body: _sedangMemuat
-          ? const _PemuatanRiwayat()
-          : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.wifi_off, size: 48),
-                        const SizedBox(height: 12),
-                        const Text('Gagal memuat transaksi dari server'),
-                        const SizedBox(height: 8),
-                        Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
-                        FilledButton.icon(
-                          onPressed: _muatData,
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Coba Lagi'),
-                        ),
-                      ],
+      body: TampilanStatus(
+        sedangMemuat: _sedangMemuat,
+        pesanMemuat: 'Memuat riwayat transaksi...',
+        error: _error,
+        judulError: 'Gagal memuat transaksi dari server',
+        ikonError: Icons.wifi_off,
+        saatCobaLagi: _muatData,
+        child: Column(
+          children: [
+            SizedBox(
+              height: 48,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: daftarFilter.length,
+                itemBuilder: (context, index) {
+                  final filter = daftarFilter[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(filter),
+                      selected: filter == _filterKategori,
+                      onSelected: (_) {
+                        setState(() => _filterKategori = filter);
+                      },
                     ),
-                  ),
-                )
-              : Column(
-                  children: [
-                    SizedBox(
-                      height: 48,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: daftarFilter.length,
-                        itemBuilder: (context, index) {
-                          final filter = daftarFilter[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              label: Text(filter),
-                              selected: filter == _filterKategori,
-                              onSelected: (_) {
-                                setState(() => _filterKategori = filter);
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    Expanded(
-                      child: kelompok.isEmpty
-                          ? const StateKosong(
-                              ikon: Icons.receipt_long,
-                              judul: 'Belum Ada Transaksi',
-                              pesan: 'Transaksi pada kategori ini belum ada. '
-                                  'Coba pilih kategori lain atau tambah transaksi baru.',
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: kelompok.length,
-                              itemBuilder: (context, index) {
-                                final tanggal = kelompok.keys.elementAt(index);
-                                final daftar = kelompok[tanggal]!;
+                  );
+                },
+              ),
+            ),
+            Expanded(
+              child: kelompok.isEmpty
+                  ? const StateKosong(
+                      ikon: Icons.receipt_long,
+                      judul: 'Belum Ada Transaksi',
+                      pesan: 'Transaksi pada kategori ini belum ada. '
+                          'Coba pilih kategori lain atau tambah transaksi baru.',
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: kelompok.length,
+                      itemBuilder: (context, index) {
+                        final tanggal = kelompok.keys.elementAt(index);
+                        final daftar = kelompok[tanggal]!;
 
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 8),
-                                      child: Text(
-                                        tanggal,
-                                        style:
-                                            tema.textTheme.titleSmall?.copyWith(
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text(
+                                tanggal,
+                                style: tema.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: tema.colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                            Card(
+                              child: Column(
+                                children: daftar.map((item) {
+                                  final kat =
+                                      _data.cariKategori(item.idKategori);
+                                  final adalahPemasukan = item.jenisTransaksi ==
+                                      JenisTransaksi.pemasukan;
+                                  return Dismissible(
+                                    key: ValueKey(item.id),
+                                    direction: DismissDirection.endToStart,
+                                    background: Container(
+                                      alignment: Alignment.centerRight,
+                                      padding: const EdgeInsets.only(right: 16),
+                                      color: Colors.red,
+                                      child: const Icon(
+                                        Icons.delete,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    confirmDismiss: (_) async {
+                                      await _hapusTransaksi(item);
+                                      return false;
+                                    },
+                                    child: ListTile(
+                                      onTap: () => _editTransaksi(item),
+                                      leading: CircleAvatar(
+                                        backgroundColor: kat != null
+                                            ? Color(kat.nilaiWarna)
+                                                .withOpacity(0.15)
+                                            : Colors.grey.withOpacity(0.15),
+                                        child: Icon(
+                                          kat != null
+                                              ? PemetaIkon.dariNama(
+                                                  kat.namaIkon)
+                                              : Icons.category,
+                                          color: kat != null
+                                              ? Color(kat.nilaiWarna)
+                                              : Colors.grey,
+                                        ),
+                                      ),
+                                      title: Text(
+                                          _data.namaKategori(item.idKategori)),
+                                      subtitle: Text(item.catatan.isNotEmpty
+                                          ? item.catatan
+                                          : 'Tidak ada catatan'),
+                                      trailing: Text(
+                                        '${adalahPemasukan ? '+' : '-'} ${PemformatMataUang.format(item.jumlah)}',
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color: tema.colorScheme.primary,
+                                          color: adalahPemasukan
+                                              ? Colors.green
+                                              : Colors.red,
                                         ),
                                       ),
                                     ),
-                                    Card(
-                                      child: Column(
-                                        children: daftar.map((item) {
-                                          final kat =
-                                              _cariKategori(item.idKategori);
-                                          final adalahPemasukan =
-                                              item.jenisTransaksi ==
-                                                  JenisTransaksi.pemasukan;
-                                          return Dismissible(
-                                            key: ValueKey(item.id),
-                                            direction:
-                                                DismissDirection.endToStart,
-                                            background: Container(
-                                              alignment: Alignment.centerRight,
-                                              padding: const EdgeInsets.only(
-                                                  right: 16),
-                                              color: Colors.red,
-                                              child: const Icon(
-                                                Icons.delete,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            confirmDismiss: (_) async {
-                                              await _hapusTransaksi(item);
-                                              return false;
-                                            },
-                                            child: ListTile(
-                                              onTap: () => _editTransaksi(item),
-                                              leading: CircleAvatar(
-                                                backgroundColor: kat != null
-                                                    ? Color(kat.nilaiWarna)
-                                                        .withOpacity(0.15)
-                                                    : Colors.grey
-                                                        .withOpacity(0.15),
-                                                child: Icon(
-                                                  kat != null
-                                                      ? PemetaIkon.dariNama(
-                                                          kat.namaIkon)
-                                                      : Icons.category,
-                                                  color: kat != null
-                                                      ? Color(kat.nilaiWarna)
-                                                      : Colors.grey,
-                                                ),
-                                              ),
-                                              title: Text(_namaKategori(
-                                                  item.idKategori)),
-                                              subtitle: Text(
-                                                  item.catatan.isNotEmpty
-                                                      ? item.catatan
-                                                      : 'Tidak ada catatan'),
-                                              trailing: Text(
-                                                '${adalahPemasukan ? '+' : '-'} ${PemformatMataUang.format(item.jumlah)}',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: adalahPemasukan
-                                                      ? Colors.green
-                                                      : Colors.red,
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        }).toList(),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                  ],
-                                );
-                              },
+                                  );
+                                }).toList(),
+                              ),
                             ),
+                            const SizedBox(height: 8),
+                          ],
+                        );
+                      },
                     ),
-                  ],
-                ),
-    );
-  }
-}
-
-class _PemuatanRiwayat extends StatelessWidget {
-  const _PemuatanRiwayat();
-
-  @override
-  Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-    return Center(
-      child: Semantics(
-        liveRegion: true,
-        label: 'Memuat riwayat transaksi',
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(
-              'Memuat riwayat transaksi...',
-              style: tema.textTheme.bodyLarge?.copyWith(
-                color: tema.colorScheme.onSurfaceVariant,
-              ),
             ),
           ],
         ),

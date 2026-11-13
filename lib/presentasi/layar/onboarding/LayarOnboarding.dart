@@ -10,6 +10,7 @@ import '../../../inti/utils/UmpanBalik.dart';
 import '../../../provider/ProviderOnboarding.dart';
 import '../../widget/BidangTeks.dart';
 import '../../widget/StateKosong.dart';
+import '../../widget/TampilanStatus.dart';
 import '../../widget/TombolUtama.dart';
 
 class LayarOnboarding extends StatefulWidget {
@@ -65,22 +66,7 @@ class _KeadaanLayarOnboarding extends State<LayarOnboarding> {
   }
 
   Widget _bangunLoading(BuildContext context) {
-    final tema = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 16),
-          Text(
-            'Memuat kategori...',
-            style: tema.textTheme.bodyLarge?.copyWith(
-              color: tema.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
+    return const IndikatorMemuat(pesan: 'Memuat kategori...');
   }
 
   Widget _bangunKosong(ProviderOnboarding provider) {

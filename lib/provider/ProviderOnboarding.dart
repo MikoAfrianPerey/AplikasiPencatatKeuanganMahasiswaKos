@@ -6,6 +6,7 @@ import '../data/repository/RepositoryKategori.dart';
 import '../data/repository/RepositoryPeriodeBudget.dart';
 import '../inti/state/StatusData.dart';
 import '../inti/utils/PemformatMataUang.dart';
+import '../inti/validasi/ValidasiAngka.dart';
 
 class ProviderOnboarding extends ChangeNotifier {
   final RepositoryKategori _repositoryKategori;
@@ -44,7 +45,7 @@ class ProviderOnboarding extends ChangeNotifier {
         _siapkanController(hasil);
       }
     } on Exception catch (e) {
-      _statusKategori = StatusData.error(e.toString());
+      _statusKategori = StatusData.dariError(e);
     }
     notifyListeners();
   }
@@ -78,73 +79,66 @@ class ProviderOnboarding extends ChangeNotifier {
   }
 
   String? validasiPemasukan(String? nilai) {
-    if (nilai == null || nilai.isEmpty) {
-      return 'Total pemasukan tidak boleh kosong';
-    }
-    final jumlah = int.tryParse(nilai);
-    if (jumlah == null || jumlah <= 0) {
-      return 'Masukkan angka lebih dari 0';
-    }
-    return null;
+    final kosong = nilai == null || nilai.isEmpty;
+    return ValidasiAngka.jumlahPositif(
+      nilai,
+      kosong
+          ? 'Total pemasukan tidak boleh kosong'
+          : 'Masukkan angka lebih dari 0',
+    );
   }
 
-  String? validasiBatas(String? nilai) {
-    final batas = int.tryParse(nilai ?? '');
-    if (batas == null) {
-      return 'Isi dengan angka';
-    }
-    if (batas < 0) {
-      return 'Batas tidak boleh negatif';
-    }
-    return null;
-  }
+  String? validasiBatas(String? nilai) =>
+      ValidasiAngka.batasTidakNegatif(nilai);
 
   String get ringkasanBatas {
     return 'Total batas: ${PemformatMataUang.format(_totalBatas)} '
         'dari ${PemformatMataUang.format(_totalPemasukan)}';
   }
 
-  Future<void> simpanPeriode() async {
-    _errorTotalBatas = null;
+  String? _validasiForm() {
+    final errorPemasukan = validasiPemasukan(controllerPemasukan.text);
+    if (errorPemasukan != null) return errorPemasukan;
+    return _validasiTotal();
+  }
 
-    if (validasiPemasukan(controllerPemasukan.text) != null) {
-      notifyListeners();
-      return;
-    }
-
+  String? _validasiTotal() {
     for (final controller in controllerBatas.values) {
-      if (validasiBatas(controller.text) != null) {
-        notifyListeners();
-        return;
-      }
+      final error = validasiBatas(controller.text);
+      if (error != null) return error;
     }
-
     final totalBatas = _totalBatas;
     if (totalBatas > _totalPemasukan) {
-      _errorTotalBatas =
-          'Total batas kategori (${PemformatMataUang.format(totalBatas)}) '
+      return 'Total batas kategori (${PemformatMataUang.format(totalBatas)}) '
           'melebihi total pemasukan (${PemformatMataUang.format(_totalPemasukan)}). '
           'Kurangi batas atau tambah pemasukan.';
+    }
+    return null;
+  }
+
+  Map<int, int> _kumpulkanBatas() => {
+        for (final item in controllerBatas.entries)
+          item.key: int.tryParse(item.value.text) ?? 0,
+      };
+
+  Future<void> simpanPeriode() async {
+    _errorTotalBatas = _validasiTotal();
+    if (_validasiForm() != null) {
       notifyListeners();
       return;
     }
-    _errorTotalBatas = null;
 
     _statusSimpan = const StatusData.loading();
     notifyListeners();
 
     try {
-      final batas = <int, int>{};
-      for (final item in controllerBatas.entries) {
-        batas[item.key] = int.tryParse(item.value.text) ?? 0;
-      }
       final periode = await _repositoryPeriode.buatPeriode(
         totalPemasukan: _totalPemasukan,
-        batasKategori: batas,
+        batasKategori: _kumpulkanBatas(),
       );
       _statusSimpan = StatusData.sukses(periode);
     } on Exception catch (e) {
-      _statusSimpan = StatusData.error(e.toString());
+      _statusSimpan = StatusData.dariError(e);
     }
     notifyListeners();
   }
