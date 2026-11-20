@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../inti/state/StatusData.dart';
+import '../inti/utils/LogAplikasi.dart';
 import '../inti/validasi/ProfilValidasi.dart';
 import '../layanan/LayananAuth.dart';
 
@@ -66,6 +67,7 @@ class ProviderAuth extends ChangeNotifier {
           ? const StatusData.error('Gagal menyimpan sesi')
           : StatusData.sukses(pengguna);
     } on Exception catch (error) {
+      LogAplikasi.error('Gagal daftar/masuk', error: error);
       _status = StatusData.dariError(error);
     }
     notifyListeners();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/repository/RepositoryProfil.dart';
 import '../inti/state/StatusData.dart';
+import '../inti/utils/LogAplikasi.dart';
 import '../inti/validasi/ProfilValidasi.dart';
 import '../layanan/LayananAuth.dart';
 
@@ -70,6 +71,7 @@ class ProviderProfil extends ChangeNotifier {
       _statusSimpan = StatusData.sukses(pengguna);
       return pengguna;
     } on Exception catch (error) {
+      LogAplikasi.error('Gagal simpan profil', error: error);
       _statusSimpan = StatusData.dariError(error);
       return null;
     } finally {
@@ -100,6 +102,7 @@ class ProviderProfil extends ChangeNotifier {
       resetStatusSandi();
       return true;
     } on Exception catch (error) {
+      LogAplikasi.error('Gagal ubah sandi', error: error);
       _statusSandi = StatusData.dariError(error);
       return false;
     } finally {

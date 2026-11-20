@@ -5,6 +5,7 @@ import '../data/model/PeriodeBudget.dart';
 import '../data/repository/RepositoryKategori.dart';
 import '../data/repository/RepositoryPeriodeBudget.dart';
 import '../inti/state/StatusData.dart';
+import '../inti/utils/LogAplikasi.dart';
 import '../inti/utils/PemformatMataUang.dart';
 import '../inti/validasi/ValidasiAngka.dart';
 
@@ -45,6 +46,7 @@ class ProviderOnboarding extends ChangeNotifier {
         _siapkanController(hasil);
       }
     } on Exception catch (e) {
+      LogAplikasi.error('Gagal memuat kategori onboarding', error: e);
       _statusKategori = StatusData.dariError(e);
     }
     notifyListeners();
@@ -138,6 +140,7 @@ class ProviderOnboarding extends ChangeNotifier {
       );
       _statusSimpan = StatusData.sukses(periode);
     } on Exception catch (e) {
+      LogAplikasi.error('Gagal menyimpan periode', error: e);
       _statusSimpan = StatusData.dariError(e);
     }
     notifyListeners();

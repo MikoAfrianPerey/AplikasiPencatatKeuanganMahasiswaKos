@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import '../../inti/utils/LogAplikasi.dart';
 import '../model/Transaksi.dart';
 import 'RepositoryTransaksi.dart';
 
@@ -99,12 +100,16 @@ class RepositoryTransaksiApi implements RepositoryTransaksi {
   }
 
   Future<String> _kirim(String method, Uri uri, [Object? payload]) async {
+    LogAplikasi.info('API $method ${uri.path}${uri.query}');
     final request = await _client.openUrl(method, uri);
     request.headers.contentType = ContentType.json;
     if (payload != null) request.write(jsonEncode(payload));
     final response = await request.close();
     final body = await utf8.decoder.bind(response).join();
     if (response.statusCode < 200 || response.statusCode >= 300) {
+      LogAplikasi.error(
+        'API $method ${uri.path} gagal HTTP ${response.statusCode}',
+      );
       throw HttpException('API mengembalikan HTTP ${response.statusCode}',
           uri: uri);
     }

@@ -6,6 +6,7 @@ import '../data/repository/RepositoryKategori.dart';
 import '../data/repository/RepositoryPeriodeBudget.dart';
 import '../data/repository/RepositoryTransaksi.dart';
 import '../inti/state/StatusData.dart';
+import '../inti/utils/LogAplikasi.dart';
 import '../inti/validasi/ValidasiAngka.dart';
 import '../layanan/LayananNotifikasi.dart';
 
@@ -67,6 +68,7 @@ class ProviderTransaksi extends ChangeNotifier {
         _kategoriTerpilih ??= hasil.first;
       }
     } on Exception catch (e) {
+      LogAplikasi.error('Gagal memuat kategori', error: e);
       _statusKategori = StatusData.dariError(e);
     }
     notifyListeners();
@@ -171,6 +173,7 @@ class ProviderTransaksi extends ChangeNotifier {
       _statusSimpan = StatusData.sukses(transaksi);
       await _cekBatasKategori(transaksi);
     } on Exception catch (e) {
+      LogAplikasi.error('Gagal menyimpan transaksi', error: e);
       _statusSimpan = StatusData.dariError(e);
     }
     notifyListeners();
